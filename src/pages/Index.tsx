@@ -1,12 +1,36 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import React from "react";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import GhostGrid from "@/components/GhostGrid";
+import { useGhost } from "@/contexts/GhostContext";
 
 const Index = () => {
+  const { searchTerm } = useGhost();
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
-      </div>
+    <div className="flex flex-col min-h-screen">
+      <Header />
+      
+      <main className="container max-w-5xl mx-auto py-8 px-6 flex-grow">
+        <div className="mb-10 text-center">
+          <h1 className="text-4xl font-bold mb-3">Search for Ghosts</h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Report recruiters or companies that ghosted you during hiring. 
+            Search and track patterns. If remorseful, they can pay a no-show fee.
+          </p>
+        </div>
+
+        {!searchTerm && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-semibold mb-6">Top Ghosters</h2>
+          </div>
+        )}
+        
+        <GhostGrid />
+      </main>
+      
+      <Footer />
     </div>
   );
 };
