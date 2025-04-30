@@ -61,7 +61,18 @@ const ReportForm = () => {
   });
 
   const onSubmit = (data: FormValues) => {
-    addReport(data);
+    // Ensure all required fields are present when calling addReport
+    const reportData = {
+      reporterName: data.reporterName,
+      reporterEmail: data.reporterEmail,
+      ghostName: data.ghostName,
+      ghostPhotoURL: data.ghostPhotoURL,
+      dateGhosted: data.dateGhosted,
+      evidenceURL: data.evidenceURL,
+      venmoHandle: data.venmoHandle,
+    };
+    
+    addReport(reportData);
     form.reset();
   };
 
