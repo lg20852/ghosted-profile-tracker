@@ -41,7 +41,7 @@ const GhostCard: React.FC<GhostCardProps> = ({ ghost }) => {
         >
           Pay $500 via Venmo
         </Button>
-        <p className="text-xs mt-2 text-gray-500">$450 goes to victims, $50 supports Ghosted</p>
+        <p className="text-xs mt-2 text-gray-500">$450 to victims, $50 to the platform</p>
         
         <a href="#" className="text-xs mt-4 text-gray-400 hover:underline">
           Report abuse
