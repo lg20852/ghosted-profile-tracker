@@ -25,10 +25,6 @@ const Header = () => {
         <span className="text-2xl font-bold">Ghosted</span>
       </Link>
       
-      <div className="w-full md:w-1/3">
-        <SearchBar />
-      </div>
-      
       <Dialog>
         <DialogTrigger asChild>
           <Button variant="outline" className="border-black hover:bg-black hover:text-white transition-all">
