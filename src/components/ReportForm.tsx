@@ -82,9 +82,15 @@ const ReportForm = () => {
   const onStep2Submit = (data: Step2Values) => {
     if (!step1Data) return;
 
+    // Create a report object with all required fields explicitly defined
     const reportData = {
-      ...step1Data,
-      ...data,
+      reporterName: data.reporterName,
+      reporterEmail: data.reporterEmail,
+      ghostName: step1Data.ghostName,
+      ghostPhotoURL: step1Data.ghostPhotoURL,
+      dateGhosted: step1Data.dateGhosted,
+      evidenceURL: step1Data.evidenceURL,
+      venmoHandle: step1Data.venmoHandle,
     };
     
     addReport(reportData);
