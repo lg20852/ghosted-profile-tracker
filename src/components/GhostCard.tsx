@@ -43,7 +43,7 @@ const GhostCard: React.FC<GhostCardProps> = ({ ghost }) => {
         </Button>
         <p className="text-xs mt-2 text-gray-500">$450 to victims, $50 to the platform</p>
         
-        <a href="#" className="text-xs mt-4 text-gray-400 hover:underline">
+        <a href="mailto:support@ghosted.app?subject=Report%20Abuse%20-%20Ghost%20Profile" className="text-xs mt-4 text-gray-400 hover:underline">
           Report abuse
         </a>
       </CardContent>

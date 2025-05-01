@@ -25,7 +25,7 @@ const Index = () => {
         
         {!searchTerm && (
           <div className="mb-8">
-            <h2 className="text-2xl font-semibold mb-6">Top Ghosters</h2>
+            <h2 className="text-2xl font-semibold mb-6">All Ghosters</h2>
           </div>
         )}
         

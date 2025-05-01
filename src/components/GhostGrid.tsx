@@ -12,8 +12,8 @@ const GhostGrid = () => {
   // Sort by spook count (descending)
   const sortedGhosts = [...filteredGhosts].sort((a, b) => b.spookCount - a.spookCount);
   
-  // Show only top 3 ghosts when not searching
-  const displayGhosts = searchTerm ? sortedGhosts : sortedGhosts.slice(0, 3);
+  // Show all ghosts
+  const displayGhosts = searchTerm ? sortedGhosts : sortedGhosts;
   
   if (displayGhosts.length === 0) {
     return (
