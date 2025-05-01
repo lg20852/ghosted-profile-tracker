@@ -20,8 +20,8 @@ const GhostGrid = () => {
       <div className="text-center py-12">
         <h3 className="text-xl font-medium">
           {searchTerm 
-            ? `No ghosts found matching "${searchTerm}". Want to go first?` 
-            : "No ghosts reported yet. Want to be the first?"}
+            ? `No ghosts found matching "${searchTerm}". Need to make a report?` 
+            : "No ghosts reported yet. Need to make a report?"}
         </h3>
         <p className="mt-2 text-gray-600 mb-4">
           Help others by reporting your ghosting experience
