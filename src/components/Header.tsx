@@ -27,7 +27,7 @@ const Header = () => {
       <Dialog>
         <DialogTrigger asChild>
           <Button variant="outline" className="border-black hover:bg-black hover:text-white transition-all">
-            Report a Ghost
+            Report a Ghosting
           </Button>
         </DialogTrigger>
         <ReportForm />

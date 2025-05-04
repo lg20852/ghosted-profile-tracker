@@ -9,8 +9,8 @@ export const ReporterSection = () => {
 
   return (
     <div className="space-y-4 pt-4 border-t border-gray-100">
-      <h3 className="text-sm font-medium">About You (Support Only)</h3>
-      <p className="text-xs text-gray-500">We never share your info. It's only for dispute support.</p>
+      <h3 className="text-sm font-medium">Your Information</h3>
+      <p className="text-xs text-gray-500">We never share your info. It's only for verification.</p>
       
       <FormField
         control={form.control}
@@ -56,3 +56,5 @@ export const ReporterSection = () => {
     </div>
   );
 };
+
+export default ReporterSection;

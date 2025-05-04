@@ -37,7 +37,7 @@ import { GhostSection } from "./report/GhostSection";
 const formSchema = z.object({
   reporterName: z.string().min(2, "Name is required"),
   reporterEmail: z.string().email("Valid email is required"),
-  ghostName: z.string().min(2, "Ghost's name is required"),
+  ghostName: z.string().min(2, "Recruiter/Company name is required"),
   ghostPhotoURL: z.string().url("Valid URL is required"),
   dateGhosted: z.date({
     required_error: "Date is required",
@@ -81,21 +81,21 @@ const ReportForm = () => {
     
     toast({
       title: "Thanks for your report",
-      description: "This ghost has been added to the registry."
+      description: "If verified, we'll notify the employer."
     });
   };
 
   return (
     <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
       <DialogHeader>
-        <DialogTitle>Report a Ghost</DialogTitle>
+        <DialogTitle>Report a Ghosting</DialogTitle>
         <DialogDescription>
           Report recruiters or companies that have ghosted you during the hiring process.
         </DialogDescription>
       </DialogHeader>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" autoComplete="off">
           <GhostSection form={form} />
           <ReporterSection />
           

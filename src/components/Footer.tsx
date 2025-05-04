@@ -22,11 +22,7 @@ const Footer = () => {
         </div>
         
         <div className="text-gray-600 text-sm">
-          <p>Contact: support@ghosted.app</p>
-        </div>
-        
-        <div className="text-gray-500 text-xs mt-4 md:mt-0">
-          <p>© 2025 Ghosted. All rights reserved.</p>
+          <p>Questions? Email support@ghosted.app</p>
         </div>
       </div>
     </footer>

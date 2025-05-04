@@ -17,14 +17,14 @@ interface GhostSectionProps {
 export const GhostSection = ({ form }: GhostSectionProps) => {
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-medium">About the Ghost</h3>
+      <h3 className="text-sm font-medium">About the Recruiter/Company</h3>
       
       <FormField
         control={form.control}
         name="ghostName"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Company or Recruiter Name</FormLabel>
+            <FormLabel>Recruiter or Company Name</FormLabel>
             <FormControl>
               <Input placeholder="TechGiant Corp" {...field} autoComplete="off" />
             </FormControl>
@@ -38,7 +38,7 @@ export const GhostSection = ({ form }: GhostSectionProps) => {
         name="ghostPhotoURL"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Company Logo or Recruiter Photo URL</FormLabel>
+            <FormLabel>Recruiter Photo or Company Logo URL (optional)</FormLabel>
             <FormControl>
               <Input placeholder="https://example.com/logo.png" {...field} autoComplete="off" />
             </FormControl>
@@ -92,7 +92,7 @@ export const GhostSection = ({ form }: GhostSectionProps) => {
         name="evidenceURL"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Evidence URL</FormLabel>
+            <FormLabel>Evidence URL or Note</FormLabel>
             <FormControl>
               <Input placeholder="https://drive.google.com/file/..." {...field} autoComplete="off" />
             </FormControl>
@@ -103,3 +103,5 @@ export const GhostSection = ({ form }: GhostSectionProps) => {
     </div>
   );
 };
+
+export default GhostSection;
