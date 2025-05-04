@@ -12,9 +12,9 @@ interface GhostCardProps {
 
 const GhostCard: React.FC<GhostCardProps> = ({ ghost }) => {
   const handleVenmoPayment = () => {
-    // Using the updated Venmo deep link
+    // In a real app, this would use the actual Venmo handle from env variables
     window.open(
-      `venmo://paycharge?txn=pay&recipients=@ghostedsupport&amount=500&note=Ghosting Settlement`,
+      `venmo://paycharge?txn=pay&recipients=@ghostedsupport&amount=500&note=No-show fee for ${ghost.name}`,
       "_blank"
     );
   };
@@ -30,8 +30,8 @@ const GhostCard: React.FC<GhostCardProps> = ({ ghost }) => {
         <h3 className="font-bold text-xl mb-2">{ghost.name}</h3>
         
         <div className="text-gray-600 mb-4">
-          <p className="font-medium">Reported {ghost.spookCount} times for ghosting</p>
-          <p className="text-sm">Last report: {format(ghost.lastSeen, 'yyyy-MM-dd')}</p>
+          <p className="font-medium">Spooked {ghost.spookCount} times</p>
+          <p className="text-sm">Last seen: {format(ghost.lastSeen, 'yyyy-MM-dd')}</p>
         </div>
         
         <Button 
@@ -39,9 +39,9 @@ const GhostCard: React.FC<GhostCardProps> = ({ ghost }) => {
           className="border-black hover:bg-black hover:text-white transition-all"
           onClick={handleVenmoPayment}
         >
-          Settle Report – $500 via Venmo
+          Pay $500 via Venmo
         </Button>
-        <p className="text-xs mt-2 text-gray-500">$450 goes to candidate, $50 supports the platform</p>
+        <p className="text-xs mt-2 text-gray-500">$450 to victims, $50 to the platform</p>
         
         <a href="mailto:support@ghosted.app?subject=Report%20Abuse%20-%20Ghost%20Profile" className="text-xs mt-4 text-gray-400 hover:underline">
           Report abuse

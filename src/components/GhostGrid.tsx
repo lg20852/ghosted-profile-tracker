@@ -13,7 +13,7 @@ const GhostGrid = () => {
   const sortedGhosts = [...filteredGhosts].sort((a, b) => b.spookCount - a.spookCount);
   
   // Show all ghosts
-  const displayGhosts = sortedGhosts;
+  const displayGhosts = searchTerm ? sortedGhosts : sortedGhosts;
   
   if (displayGhosts.length === 0) {
     return (
