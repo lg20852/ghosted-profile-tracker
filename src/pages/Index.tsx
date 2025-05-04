@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useRef } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import GhostGrid from "@/components/GhostGrid";
@@ -12,6 +12,11 @@ import FloatingReportButton from "@/components/FloatingReportButton";
 
 const Index = () => {
   const { searchTerm } = useGhost();
+  const searchSectionRef = useRef<HTMLDivElement>(null);
+
+  const scrollToSearch = () => {
+    searchSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -24,7 +29,7 @@ const Index = () => {
             Search ghosting reports. Share your experience. Verified reports may qualify for $500 employer-paid compensation.
           </p>
           
-          <div className="mt-6">
+          <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
             <Dialog>
               <DialogTrigger asChild>
                 <Button className="w-full sm:w-auto bg-black text-white hover:bg-gray-800 px-8 py-6 text-lg">
@@ -33,10 +38,18 @@ const Index = () => {
               </DialogTrigger>
               <ReportForm />
             </Dialog>
+            
+            <Button 
+              variant="outline" 
+              className="w-full sm:w-auto border-black hover:bg-black hover:text-white px-8 py-6 text-lg"
+              onClick={scrollToSearch}
+            >
+              Browse Reports
+            </Button>
           </div>
         </div>
 
-        <div className="py-6 border-t border-gray-100 bg-gray-50 -mx-6 px-6">
+        <div ref={searchSectionRef} className="py-6 border-t border-gray-100 bg-gray-50 -mx-6 px-6">
           <SearchBar />
           
           {!searchTerm && (

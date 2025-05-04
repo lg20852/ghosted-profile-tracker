@@ -1,11 +1,22 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Input } from "./ui/input";
 import { useGhost } from "@/contexts/GhostContext";
 import { Search } from "lucide-react";
 
 const SearchBar = () => {
   const { searchTerm, setSearchTerm } = useGhost();
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
+
+  const toggleFilter = (filter: string) => {
+    if (activeFilters.includes(filter)) {
+      setActiveFilters(activeFilters.filter(item => item !== filter));
+    } else {
+      setActiveFilters([...activeFilters, filter]);
+    }
+  };
+
+  const isFilterActive = (filter: string) => activeFilters.includes(filter);
 
   return (
     <div className="max-w-full mx-auto w-full">
@@ -24,10 +35,38 @@ const SearchBar = () => {
       </div>
       <div className="flex overflow-x-auto pb-2 mt-4 hide-scrollbar">
         <div className="flex flex-nowrap gap-2">
-          <span className="px-3 py-1 bg-gray-100 rounded-full text-sm cursor-pointer hover:bg-gray-200 whitespace-nowrap">Recruiter</span>
-          <span className="px-3 py-1 bg-gray-100 rounded-full text-sm cursor-pointer hover:bg-gray-200 whitespace-nowrap">Company</span>
-          <span className="px-3 py-1 bg-gray-100 rounded-full text-sm cursor-pointer hover:bg-gray-200 whitespace-nowrap">Date</span>
-          <span className="px-3 py-1 bg-gray-100 rounded-full text-sm cursor-pointer hover:bg-gray-200 whitespace-nowrap">Location</span>
+          <span 
+            className={`px-3 py-1 rounded-full text-sm cursor-pointer whitespace-nowrap transition-colors ${
+              isFilterActive('Recruiter') ? 'bg-black text-white' : 'bg-gray-100 hover:bg-gray-200'
+            }`}
+            onClick={() => toggleFilter('Recruiter')}
+          >
+            Recruiter
+          </span>
+          <span 
+            className={`px-3 py-1 rounded-full text-sm cursor-pointer whitespace-nowrap transition-colors ${
+              isFilterActive('Company') ? 'bg-black text-white' : 'bg-gray-100 hover:bg-gray-200'
+            }`}
+            onClick={() => toggleFilter('Company')}
+          >
+            Company
+          </span>
+          <span 
+            className={`px-3 py-1 rounded-full text-sm cursor-pointer whitespace-nowrap transition-colors ${
+              isFilterActive('Date') ? 'bg-black text-white' : 'bg-gray-100 hover:bg-gray-200'
+            }`}
+            onClick={() => toggleFilter('Date')}
+          >
+            Date
+          </span>
+          <span 
+            className={`px-3 py-1 rounded-full text-sm cursor-pointer whitespace-nowrap transition-colors ${
+              isFilterActive('Location') ? 'bg-black text-white' : 'bg-gray-100 hover:bg-gray-200'
+            }`}
+            onClick={() => toggleFilter('Location')}
+          >
+            Location
+          </span>
         </div>
       </div>
     </div>
