@@ -9,7 +9,7 @@ import {
   PopoverContent,
   PopoverTrigger 
 } from "./ui/popover";
-import { format, subDays } from "date-fns";
+import { format, subDays, isBefore, isAfter } from "date-fns";
 
 // Define interfaces for better type safety
 interface CompanyData {

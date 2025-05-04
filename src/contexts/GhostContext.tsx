@@ -61,10 +61,11 @@ export function GhostProvider({ children }: { children: ReactNode }) {
               return ghost.location?.toLowerCase() === filter.value.toLowerCase();
             
             default:
-              // Handle date filters
+              // Handle date filters by checking if the ghost's lastSeen date is after the cutoff date
               if (filter.type.startsWith('date-')) {
                 const cutoffDate = filter.value;
-                return new Date(ghost.lastSeen) >= cutoffDate;
+                const lastSeenDate = new Date(ghost.lastSeen);
+                return lastSeenDate >= cutoffDate;
               }
               return true;
           }
