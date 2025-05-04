@@ -5,6 +5,7 @@ import { Button } from "./ui/button";
 import { GhostProfile } from "@/types";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Calendar, Users, AlertTriangle } from "lucide-react";
 
 interface GhostCardProps {
   ghost: GhostProfile;
@@ -20,23 +21,29 @@ const GhostCard: React.FC<GhostCardProps> = ({ ghost }) => {
   };
 
   return (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow">
+    <Card className="overflow-hidden hover:shadow-md transition-all hover:translate-y-[-3px] cursor-pointer">
       <CardContent className="p-6 flex flex-col items-center text-center">
         <Avatar className="h-24 w-24 mb-4">
           <AvatarImage src={ghost.photoURL} alt={ghost.name} />
           <AvatarFallback>{ghost.name.substring(0, 2).toUpperCase()}</AvatarFallback>
         </Avatar>
         
-        <h3 className="font-bold text-xl mb-2">{ghost.name}</h3>
+        <h3 className="font-bold text-xl mb-4">{ghost.name}</h3>
         
-        <div className="text-gray-600 mb-4">
-          <p className="font-medium">Reported {ghost.spookCount} times for ghosting</p>
-          <p className="text-sm">Last report: {format(ghost.lastSeen, 'yyyy-MM-dd')}</p>
+        <div className="text-gray-600 mb-6 space-y-2 w-full">
+          <p className="font-medium flex items-center justify-center gap-2">
+            <AlertTriangle size={16} className="text-amber-500" />
+            Reported {ghost.spookCount} times for ghosting
+          </p>
+          <p className="text-sm flex items-center justify-center gap-2">
+            <Calendar size={14} />
+            Last report: {format(ghost.lastSeen, 'yyyy-MM-dd')}
+          </p>
         </div>
         
         <Button 
           variant="outline" 
-          className="border-black hover:bg-black hover:text-white transition-all"
+          className="border-black hover:bg-black hover:text-white transition-all w-full"
           onClick={handleVenmoPayment}
         >
           Settle Report – $500 via Venmo
