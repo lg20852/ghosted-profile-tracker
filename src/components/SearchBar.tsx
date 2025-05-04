@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Input } from "./ui/input";
 import { useGhost } from "@/contexts/GhostContext";
-import { Search, Calendar, Building, Map } from "lucide-react";
+import { Search, Calendar, Building, Map as MapIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { 
   Popover,
@@ -10,6 +10,12 @@ import {
   PopoverTrigger 
 } from "./ui/popover";
 import { format, subDays } from "date-fns";
+
+// Define interfaces for better type safety
+interface CompanyData {
+  name: string;
+  count: number;
+}
 
 const timeFrames = [
   { label: "Last 7 days", days: 7 },
@@ -30,7 +36,7 @@ const SearchBar = () => {
 
   // Get unique company names and sort by report count
   const companies = React.useMemo(() => {
-    const companyMap = new Map();
+    const companyMap = new Map<string, CompanyData>();
     
     // Group by company name and count occurrences
     ghostProfiles.forEach(ghost => {
@@ -41,7 +47,9 @@ const SearchBar = () => {
         companyMap.set(company, { name: ghost.company, count: 1 });
       } else {
         const current = companyMap.get(company);
-        companyMap.set(company, { ...current, count: current.count + 1 });
+        if (current) {
+          companyMap.set(company, { ...current, count: current.count + 1 });
+        }
       }
     });
     
@@ -185,7 +193,7 @@ const SearchBar = () => {
                 </div>
               ) : companies.length > 0 ? (
                 <div className="flex flex-col space-y-1">
-                  {companies.map(company => (
+                  {companies.map((company) => (
                     <Button
                       key={company.name}
                       variant="ghost"
@@ -210,7 +218,7 @@ const SearchBar = () => {
                   isFilterActive('location') ? 'bg-black text-white' : 'bg-gray-100 hover:bg-gray-200'
                 }`}
               >
-                <Map className="h-3.5 w-3.5" /> Location
+                <MapIcon className="h-3.5 w-3.5" /> Location
               </span>
             </PopoverTrigger>
             <PopoverContent className="w-48 p-2 max-h-64 overflow-y-auto">
