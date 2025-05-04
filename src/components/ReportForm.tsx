@@ -21,15 +21,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useGhost } from "@/contexts/GhostContext";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { toast } from "@/components/ui/use-toast";
 import { ReporterSection } from "./report/ReporterSection";
 import { GhostSection } from "./report/GhostSection";
@@ -95,7 +86,7 @@ const ReportForm = () => {
       </DialogHeader>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" autoComplete="off">
           <GhostSection form={form} />
           <ReporterSection />
           
