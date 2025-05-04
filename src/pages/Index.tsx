@@ -1,3 +1,4 @@
+
 import React, { useRef } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -8,16 +9,19 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import ReportForm from "@/components/ReportForm";
 import FloatingReportButton from "@/components/FloatingReportButton";
+
 const Index = () => {
   const {
     searchTerm
   } = useGhost();
   const searchSectionRef = useRef<HTMLDivElement>(null);
+  
   const scrollToSearch = () => {
     searchSectionRef.current?.scrollIntoView({
       behavior: "smooth"
     });
   };
+  
   return <div className="flex flex-col min-h-screen">
       <Header />
       
@@ -59,4 +63,5 @@ const Index = () => {
       <FloatingReportButton />
     </div>;
 };
+
 export default Index;

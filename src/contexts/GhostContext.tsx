@@ -4,6 +4,13 @@ import { GhostProfile, Report } from "../types";
 import { mockGhostProfiles, mockReports } from "../data/mockData";
 import { toast } from "@/components/ui/use-toast";
 
+// Define the filter type
+export interface Filter {
+  type: string;
+  label: string;
+  value: any;
+}
+
 interface GhostContextType {
   ghostProfiles: GhostProfile[];
   reports: Report[];
@@ -12,6 +19,9 @@ interface GhostContextType {
   addReport: (report: Report) => void;
   filteredGhosts: GhostProfile[];
   getGhostById: (id: string) => GhostProfile | undefined;
+  activeFilters: Filter[];
+  setActiveFilters: React.Dispatch<React.SetStateAction<Filter[]>>;
+  isFiltering: boolean;
 }
 
 const GhostContext = createContext<GhostContextType | undefined>(undefined);
@@ -20,12 +30,51 @@ export function GhostProvider({ children }: { children: ReactNode }) {
   const [ghostProfiles, setGhostProfiles] = useState<GhostProfile[]>(mockGhostProfiles);
   const [reports, setReports] = useState<Report[]>(mockReports);
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeFilters, setActiveFilters] = useState<Filter[]>([]);
+  const [isFiltering, setIsFiltering] = useState(false);
 
-  const filteredGhosts = searchTerm
-    ? ghostProfiles.filter(ghost => 
-        ghost.name.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    : ghostProfiles;
+  // Filter ghosts based on search term and active filters
+  const filteredGhosts = React.useMemo(() => {
+    setIsFiltering(true);
+    let result = ghostProfiles;
+    
+    // Filter by search term
+    if (searchTerm) {
+      result = result.filter(ghost => {
+        const nameMatch = ghost.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const recruiterMatch = ghost.recruiterName?.toLowerCase().includes(searchTerm.toLowerCase());
+        const companyMatch = ghost.company?.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        return nameMatch || recruiterMatch || companyMatch;
+      });
+    }
+    
+    // Apply active filters
+    if (activeFilters.length > 0) {
+      result = result.filter(ghost => {
+        return activeFilters.every(filter => {
+          switch(filter.type) {
+            case 'company':
+              return ghost.company?.toLowerCase() === filter.value.toLowerCase();
+            
+            case 'location':
+              return ghost.location?.toLowerCase() === filter.value.toLowerCase();
+            
+            default:
+              // Handle date filters
+              if (filter.type.startsWith('date-')) {
+                const cutoffDate = filter.value;
+                return new Date(ghost.lastSeen) >= cutoffDate;
+              }
+              return true;
+          }
+        });
+      });
+    }
+    
+    setTimeout(() => setIsFiltering(false), 300); // Short delay to simulate loading
+    return result;
+  }, [ghostProfiles, searchTerm, activeFilters]);
 
   const addReport = (report: Report) => {
     // Add an ID and timestamp
@@ -37,6 +86,9 @@ export function GhostProvider({ children }: { children: ReactNode }) {
 
     // Update reports
     setReports(prev => [newReport, ...prev]);
+
+    // Extract company name from the report
+    const companyName = report.companyName || "";
 
     // Check if ghost already exists
     const existingGhostIndex = ghostProfiles.findIndex(
@@ -50,8 +102,11 @@ export function GhostProvider({ children }: { children: ReactNode }) {
       
       updatedGhosts[existingGhostIndex] = {
         ...ghost,
+        recruiterName: report.ghostName,
+        company: companyName,
         spookCount: ghost.spookCount + 1,
         lastSeen: report.dateGhosted,
+        location: report.location || ghost.location,
         victimVenmos: report.venmoHandle && !ghost.victimVenmos.includes(report.venmoHandle)
           ? [...ghost.victimVenmos, report.venmoHandle]
           : ghost.victimVenmos
@@ -63,9 +118,12 @@ export function GhostProvider({ children }: { children: ReactNode }) {
       const newGhost: GhostProfile = {
         id: Date.now().toString(),
         name: report.ghostName,
+        recruiterName: report.ghostName,
+        company: companyName,
         photoURL: report.ghostPhotoURL,
         spookCount: 1,
         lastSeen: report.dateGhosted,
+        location: report.location,
         victimVenmos: report.venmoHandle ? [report.venmoHandle] : []
       };
       
@@ -89,7 +147,10 @@ export function GhostProvider({ children }: { children: ReactNode }) {
     setSearchTerm,
     addReport,
     filteredGhosts,
-    getGhostById
+    getGhostById,
+    activeFilters,
+    setActiveFilters,
+    isFiltering
   };
 
   return <GhostContext.Provider value={value}>{children}</GhostContext.Provider>;

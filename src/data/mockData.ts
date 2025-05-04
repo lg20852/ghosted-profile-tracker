@@ -1,70 +1,114 @@
 
 import { GhostProfile, Report } from "../types";
 
+// Mock ghost profiles with company names and locations
 export const mockGhostProfiles: GhostProfile[] = [
   {
     id: "1",
-    name: "TechGiant Corp",
-    photoURL: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b",
+    name: "John Smith",
+    recruiterName: "John Smith",
+    company: "TechGiant Corp",
+    photoURL: "https://randomuser.me/api/portraits/men/1.jpg",
     spookCount: 42,
-    lastSeen: new Date(2025, 3, 15),
-    victimVenmos: ["@john-doe", "@jane-smith", "@alex-jones"]
+    lastSeen: new Date("2024-04-15"),
+    location: "San Francisco",
+    victimVenmos: ["@victim1", "@victim2"]
   },
   {
     id: "2",
-    name: "Startup Innovations",
-    photoURL: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158",
-    spookCount: 27,
-    lastSeen: new Date(2025, 3, 20),
-    victimVenmos: ["@sam-wilson", "@maria-garcia"]
+    name: "Sarah Johnson",
+    recruiterName: "Sarah Johnson",
+    company: "InnovateTech",
+    photoURL: "https://randomuser.me/api/portraits/women/2.jpg",
+    spookCount: 28,
+    lastSeen: new Date("2024-04-10"),
+    location: "New York",
+    victimVenmos: ["@victim3"]
   },
   {
     id: "3",
-    name: "James Johnson (Recruiter)",
-    photoURL: "https://images.unsplash.com/photo-1531297484001-80022131f5a1",
-    spookCount: 18,
-    lastSeen: new Date(2025, 4, 1),
-    victimVenmos: ["@chris-brown", "@taylor-swift", "@ed-sheeran"]
+    name: "Robert Williams",
+    recruiterName: "Robert Williams",
+    company: "Digital Solutions Inc",
+    photoURL: "https://randomuser.me/api/portraits/men/3.jpg",
+    spookCount: 19,
+    lastSeen: new Date("2024-04-05"),
+    location: "Austin",
+    victimVenmos: []
   },
   {
     id: "4",
-    name: "Global Recruiters Inc",
-    photoURL: "https://images.unsplash.com/photo-1581090464777-f3220bbe1b8b",
-    spookCount: 31,
-    lastSeen: new Date(2025, 3, 28),
-    victimVenmos: ["@robert-smith", "@susan-miller"]
+    name: "Emily Davis",
+    recruiterName: "Emily Davis",
+    company: "Future Works LLC",
+    photoURL: "https://randomuser.me/api/portraits/women/4.jpg",
+    spookCount: 15,
+    lastSeen: new Date("2024-03-28"),
+    location: "Chicago",
+    victimVenmos: ["@victim4"]
   },
   {
     id: "5",
-    name: "Future Talents Agency",
-    photoURL: "https://images.unsplash.com/photo-1649972904349-6e44c42644a7",
-    spookCount: 15,
-    lastSeen: new Date(2025, 3, 10),
-    victimVenmos: ["@mike-jones", "@linda-brown"]
+    name: "Michael Brown",
+    recruiterName: "Michael Brown",
+    company: "Catalyst Recruiting",
+    photoURL: "https://randomuser.me/api/portraits/men/5.jpg",
+    spookCount: 12,
+    lastSeen: new Date("2024-03-22"),
+    location: "Los Angeles",
+    victimVenmos: []
+  },
+  {
+    id: "6",
+    name: "Jennifer Wilson",
+    recruiterName: "Jennifer Wilson",
+    company: "TechGiant Corp",
+    photoURL: "https://randomuser.me/api/portraits/women/6.jpg",
+    spookCount: 9,
+    lastSeen: new Date("2024-03-15"),
+    location: "Seattle",
+    victimVenmos: ["@victim5"]
   }
 ];
 
+// Mock reports
 export const mockReports: Report[] = [
   {
     id: "1",
-    reporterName: "John Doe",
-    reporterEmail: "john@example.com",
-    ghostName: "TechGiant Corp",
-    ghostPhotoURL: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b",
-    dateGhosted: new Date(2025, 3, 15),
+    reporterName: "Alex Thompson",
+    reporterEmail: "alex@example.com",
+    ghostName: "John Smith",
+    companyName: "TechGiant Corp",
+    ghostPhotoURL: "https://randomuser.me/api/portraits/men/1.jpg",
+    dateGhosted: new Date("2024-04-15"),
     evidenceURL: "https://example.com/evidence1",
-    venmoHandle: "@john-doe",
-    createdAt: new Date(2025, 3, 16)
+    venmoHandle: "@alex_t",
+    location: "San Francisco",
+    createdAt: new Date("2024-04-16")
   },
   {
     id: "2",
-    reporterName: "Jane Smith",
-    reporterEmail: "jane@example.com",
-    ghostName: "Startup Innovations",
-    ghostPhotoURL: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158",
-    dateGhosted: new Date(2025, 3, 20),
+    reporterName: "Jamie Roberts",
+    reporterEmail: "jamie@example.com",
+    ghostName: "Sarah Johnson",
+    companyName: "InnovateTech",
+    ghostPhotoURL: "https://randomuser.me/api/portraits/women/2.jpg",
+    dateGhosted: new Date("2024-04-10"),
     evidenceURL: "https://example.com/evidence2",
-    venmoHandle: "@jane-smith",
-    createdAt: new Date(2025, 3, 21)
+    venmoHandle: "@jamie_r",
+    location: "New York",
+    createdAt: new Date("2024-04-12")
+  },
+  {
+    id: "3",
+    reporterName: "Casey Morgan",
+    reporterEmail: "casey@example.com",
+    ghostName: "Robert Williams",
+    companyName: "Digital Solutions Inc",
+    ghostPhotoURL: "https://randomuser.me/api/portraits/men/3.jpg",
+    dateGhosted: new Date("2024-04-05"),
+    evidenceURL: "https://example.com/evidence3",
+    location: "Austin",
+    createdAt: new Date("2024-04-07")
   }
 ];

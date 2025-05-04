@@ -20,15 +20,22 @@ const GhostCard: React.FC<GhostCardProps> = ({ ghost }) => {
     );
   };
 
+  // Determine what to display as the main heading
+  const displayName = ghost.recruiterName || ghost.name;
+
   return (
     <Card className="overflow-hidden hover:shadow-md transition-all hover:translate-y-[-3px] cursor-pointer">
       <CardContent className="p-6 flex flex-col items-center text-center">
         <Avatar className="h-24 w-24 mb-4">
-          <AvatarImage src={ghost.photoURL} alt={ghost.name} />
-          <AvatarFallback>{ghost.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+          <AvatarImage src={ghost.photoURL} alt={displayName} />
+          <AvatarFallback>{displayName.substring(0, 2).toUpperCase()}</AvatarFallback>
         </Avatar>
         
-        <h3 className="font-bold text-xl mb-4">{ghost.name}</h3>
+        <h3 className="font-bold text-xl mb-2">{displayName}</h3>
+        
+        {ghost.recruiterName && ghost.company && (
+          <p className="text-gray-600 mb-3">{ghost.company}</p>
+        )}
         
         <div className="text-gray-600 mb-6 space-y-2 w-full">
           <p className="font-medium flex items-center justify-center gap-2">
