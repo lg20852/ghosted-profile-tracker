@@ -68,6 +68,17 @@ export const mockGhostProfiles: GhostProfile[] = [
     lastSeen: new Date("2024-03-15"),
     location: "Seattle",
     victimVenmos: ["@victim5"]
+  },
+  {
+    id: "7",
+    name: "David Chen",
+    recruiterName: "David Chen",
+    company: "Swift Recruiters",
+    photoURL: "https://randomuser.me/api/portraits/men/8.jpg",
+    spookCount: 4,
+    lastSeen: new Date("2025-05-01"), // Very recent report - within the last 7 days
+    location: "Boston",
+    victimVenmos: ["@victim6"]
   }
 ];
 
@@ -110,5 +121,18 @@ export const mockReports: Report[] = [
     evidenceURL: "https://example.com/evidence3",
     location: "Austin",
     createdAt: new Date("2024-04-07")
+  },
+  {
+    id: "4",
+    reporterName: "Taylor Reed",
+    reporterEmail: "taylor@example.com",
+    ghostName: "David Chen",
+    companyName: "Swift Recruiters",
+    ghostPhotoURL: "https://randomuser.me/api/portraits/men/8.jpg",
+    dateGhosted: new Date("2025-05-01"),
+    evidenceURL: "https://example.com/evidence4",
+    venmoHandle: "@taylor_r",
+    location: "Boston",
+    createdAt: new Date("2025-05-03") // Created two days after being ghosted
   }
 ];
