@@ -134,5 +134,44 @@ export const mockReports: Report[] = [
     venmoHandle: "@taylor_r",
     location: "Boston",
     createdAt: new Date("2025-05-03") // Created two days after being ghosted
+  },
+  // Add the missing reports for Emily Davis, Michael Brown, and Jennifer Wilson
+  {
+    id: "5",
+    reporterName: "Jordan Lee",
+    reporterEmail: "jordan@example.com",
+    ghostName: "Emily Davis",
+    companyName: "Future Works LLC",
+    ghostPhotoURL: "https://randomuser.me/api/portraits/women/4.jpg",
+    dateGhosted: new Date("2024-03-28"),
+    evidenceURL: "https://example.com/evidence5",
+    venmoHandle: "@jordan_l",
+    location: "Chicago",
+    createdAt: new Date("2024-03-30")
+  },
+  {
+    id: "6",
+    reporterName: "Riley Parker",
+    reporterEmail: "riley@example.com",
+    ghostName: "Michael Brown",
+    companyName: "Catalyst Recruiting",
+    ghostPhotoURL: "https://randomuser.me/api/portraits/men/5.jpg",
+    dateGhosted: new Date("2024-03-22"),
+    evidenceURL: "https://example.com/evidence6",
+    location: "Los Angeles",
+    createdAt: new Date("2024-03-24")
+  },
+  {
+    id: "7",
+    reporterName: "Quinn Adams",
+    reporterEmail: "quinn@example.com",
+    ghostName: "Jennifer Wilson",
+    companyName: "TechGiant Corp",
+    ghostPhotoURL: "https://randomuser.me/api/portraits/women/6.jpg",
+    dateGhosted: new Date("2024-03-15"),
+    evidenceURL: "https://example.com/evidence7",
+    venmoHandle: "@quinn_a",
+    location: "Seattle",
+    createdAt: new Date("2024-03-16")
   }
 ];
