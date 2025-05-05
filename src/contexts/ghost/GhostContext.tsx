@@ -17,6 +17,7 @@ export function GhostProvider({ children }: { children: ReactNode }) {
   const [activeFilters, setActiveFilters] = useState<Filter[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Use the custom hook for filtering ghosts
   const { filteredGhosts, isFiltering } = useGhostFilter(ghostProfiles, searchTerm, activeFilters);
@@ -40,6 +41,11 @@ export function GhostProvider({ children }: { children: ReactNode }) {
           console.log("Mock data migration completed");
         } catch (err) {
           console.warn('Data migration issues (continuing anyway):', err);
+          // If migration fails but we have retry attempts left, increment the retry counter
+          if (retryCount < 2) {
+            setRetryCount(prev => prev + 1);
+            return; // Exit early to trigger a retry
+          }
         }
         
         // Then fetch all reports from Supabase
@@ -47,8 +53,12 @@ export function GhostProvider({ children }: { children: ReactNode }) {
           const supabaseReports = await fetchReports();
           console.log(`Fetched ${supabaseReports.length} reports from Supabase`);
           
-          if (supabaseReports.length === 0) {
-            setError("No reports found in the database");
+          if (supabaseReports.length === 0 && retryCount < 2) {
+            console.warn("No reports found, will retry");
+            setRetryCount(prev => prev + 1);
+            return; // Exit early to trigger a retry
+          } else if (supabaseReports.length === 0) {
+            setError("No reports found in the database. Please add a report to get started.");
             setReports([]);
             setGhostProfiles([]);
           } else {
@@ -60,13 +70,13 @@ export function GhostProvider({ children }: { children: ReactNode }) {
           }
         } catch (err) {
           console.error("Failed to fetch reports:", err);
-          setError("Failed to load reports from the database");
+          setError("Failed to load reports from the database. Please try again later.");
           setReports([]);
           setGhostProfiles([]);
         }
       } catch (err) {
         console.error("Top level error in initializeApp:", err);
-        setError("Failed to initialize application");
+        setError("Failed to initialize application. Please try again later.");
         setReports([]);
         setGhostProfiles([]);
       } finally {
@@ -75,7 +85,7 @@ export function GhostProvider({ children }: { children: ReactNode }) {
     }
     
     initializeApp();
-  }, []);
+  }, [retryCount]); // Add retryCount as a dependency to trigger re-runs when it changes
 
   const addReport = async (report: Report) => {
     try {

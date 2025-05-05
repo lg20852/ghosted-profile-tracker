@@ -97,27 +97,8 @@ export async function migrateMockData(forceUpdate = true): Promise<void> {
   console.log("Starting migration of mock data to Supabase...");
   
   try {
-    // Check if data already exists only if we're not forcing the update
-    if (!forceUpdate) {
-      const { count, error: countError } = await supabase
-        .from('reports')
-        .select('*', { count: 'exact', head: true });
-      
-      if (countError) {
-        console.error('Error checking existing data:', countError);
-        return;
-      }
-      
-      // If data exists and we're not forcing an update, don't migrate
-      if ((count || 0) > 0) {
-        console.log("Data already exists in the database, skipping migration.");
-        return;
-      }
-    }
-    
     console.log("Proceeding with migration of all mock data...");
     
-    // If we're forcing an update or no data exists, proceed with migration
     // Convert mock reports to rows
     const reportRows = mockReports.map(reportToRow);
     
@@ -169,5 +150,6 @@ export async function migrateMockData(forceUpdate = true): Promise<void> {
     console.log(`Migration completed: ${successCount}/${reportRows.length} reports processed`);
   } catch (error) {
     console.error("Migration failed:", error);
+    throw error; // Re-throw the error for the caller to handle
   }
 }

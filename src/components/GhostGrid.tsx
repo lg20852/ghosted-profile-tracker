@@ -7,6 +7,7 @@ import ReportForm from "./ReportForm";
 import { Button } from "./ui/button";
 import LoadingState from "./LoadingState";
 import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const GhostGrid = () => {
   const { filteredGhosts, searchTerm, isFiltering, activeFilters, isLoading, error } = useGhost();
@@ -21,12 +22,13 @@ const GhostGrid = () => {
   if (error) {
     return (
       <div className="text-center py-12">
-        <div className="inline-flex items-center gap-2 text-red-600 mb-2">
-          <AlertCircle size={20} />
-          <h3 className="text-xl font-medium">
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
             {error}
-          </h3>
-        </div>
+          </AlertDescription>
+        </Alert>
         <p className="mt-2 text-gray-600">
           Please add a report to get started.
         </p>
