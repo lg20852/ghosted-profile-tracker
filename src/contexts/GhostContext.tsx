@@ -1,9 +1,9 @@
-
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { GhostProfile, Report } from "../types";
-import { mockGhostProfiles, mockReports } from "../data/mockData";
+import { mockGhostProfiles } from "../data/mockData";
 import { toast } from "@/components/ui/use-toast";
 import { isAfter, isBefore, subDays } from "date-fns";
+import { fetchReports, createReport } from "@/lib/supabase";
 
 // Define the filter type
 export interface Filter {
@@ -23,16 +23,86 @@ interface GhostContextType {
   activeFilters: Filter[];
   setActiveFilters: React.Dispatch<React.SetStateAction<Filter[]>>;
   isFiltering: boolean;
+  isLoading: boolean;
+  error: string | null;
 }
 
 const GhostContext = createContext<GhostContextType | undefined>(undefined);
 
 export function GhostProvider({ children }: { children: ReactNode }) {
   const [ghostProfiles, setGhostProfiles] = useState<GhostProfile[]>(mockGhostProfiles);
-  const [reports, setReports] = useState<Report[]>(mockReports);
+  const [reports, setReports] = useState<Report[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilters, setActiveFilters] = useState<Filter[]>([]);
   const [isFiltering, setIsFiltering] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch reports from Supabase on mount
+  useEffect(() => {
+    async function loadReports() {
+      setIsLoading(true);
+      try {
+        const supabaseReports = await fetchReports();
+        setReports(supabaseReports);
+        
+        // Generate ghost profiles from reports
+        const profiles = generateGhostProfiles(supabaseReports);
+        setGhostProfiles(profiles);
+        setError(null);
+      } catch (err) {
+        console.error("Failed to fetch reports:", err);
+        setError("Failed to load reports. Please try again later.");
+        // Keep the mock data as fallback
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    loadReports();
+  }, []);
+
+  // Generate ghost profiles from reports
+  const generateGhostProfiles = (reportList: Report[]): GhostProfile[] => {
+    const profileMap = new Map<string, GhostProfile>();
+    
+    // Process each report to create or update ghost profiles
+    reportList.forEach(report => {
+      const ghostKey = report.ghostName.toLowerCase();
+      
+      if (profileMap.has(ghostKey)) {
+        // Update existing ghost
+        const existingGhost = profileMap.get(ghostKey)!;
+        
+        profileMap.set(ghostKey, {
+          ...existingGhost,
+          recruiterName: report.ghostName,
+          company: report.companyName || existingGhost.company,
+          spookCount: existingGhost.spookCount + 1,
+          lastSeen: report.dateGhosted > existingGhost.lastSeen ? report.dateGhosted : existingGhost.lastSeen,
+          location: report.location || existingGhost.location,
+          victimVenmos: report.venmoHandle && !existingGhost.victimVenmos.includes(report.venmoHandle)
+            ? [...existingGhost.victimVenmos, report.venmoHandle]
+            : existingGhost.victimVenmos
+        });
+      } else {
+        // Create new ghost
+        profileMap.set(ghostKey, {
+          id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
+          name: report.ghostName,
+          recruiterName: report.ghostName,
+          company: report.companyName,
+          photoURL: report.ghostPhotoURL,
+          spookCount: 1,
+          lastSeen: report.dateGhosted,
+          location: report.location,
+          victimVenmos: report.venmoHandle ? [report.venmoHandle] : []
+        });
+      }
+    });
+    
+    return Array.from(profileMap.values());
+  };
 
   // Filter ghosts based on search term and active filters
   const filteredGhosts = React.useMemo(() => {
@@ -83,64 +153,80 @@ export function GhostProvider({ children }: { children: ReactNode }) {
     return result;
   }, [ghostProfiles, searchTerm, activeFilters]);
 
-  const addReport = (report: Report) => {
-    // Add an ID and timestamp
-    const newReport = {
-      ...report,
-      id: Date.now().toString(),
-      createdAt: new Date()
-    };
-
-    // Update reports
-    setReports(prev => [newReport, ...prev]);
-
-    // Extract company name from the report
-    const companyName = report.companyName || "";
-
-    // Check if ghost already exists
-    const existingGhostIndex = ghostProfiles.findIndex(
-      ghost => ghost.name.toLowerCase() === report.ghostName.toLowerCase()
-    );
-
-    if (existingGhostIndex >= 0) {
-      // Update existing ghost
-      const updatedGhosts = [...ghostProfiles];
-      const ghost = updatedGhosts[existingGhostIndex];
-      
-      updatedGhosts[existingGhostIndex] = {
-        ...ghost,
-        recruiterName: report.ghostName,
-        company: companyName,
-        spookCount: ghost.spookCount + 1,
-        lastSeen: report.dateGhosted,
-        location: report.location || ghost.location,
-        victimVenmos: report.venmoHandle && !ghost.victimVenmos.includes(report.venmoHandle)
-          ? [...ghost.victimVenmos, report.venmoHandle]
-          : ghost.victimVenmos
-      };
-      
-      setGhostProfiles(updatedGhosts);
-    } else {
-      // Create new ghost
-      const newGhost: GhostProfile = {
+  const addReport = async (report: Report) => {
+    try {
+      // Add an ID and timestamp
+      const newReport = {
+        ...report,
         id: Date.now().toString(),
-        name: report.ghostName,
-        recruiterName: report.ghostName,
-        company: companyName,
-        photoURL: report.ghostPhotoURL,
-        spookCount: 1,
-        lastSeen: report.dateGhosted,
-        location: report.location,
-        victimVenmos: report.venmoHandle ? [report.venmoHandle] : []
+        createdAt: new Date()
       };
       
-      setGhostProfiles(prev => [newGhost, ...prev]);
-    }
+      // Save to Supabase
+      const savedReport = await createReport(newReport);
+      
+      if (!savedReport) {
+        throw new Error("Failed to save report");
+      }
+      
+      // Update local state with the saved report
+      setReports(prev => [savedReport, ...prev]);
 
-    toast({
-      title: "Report submitted",
-      description: `You've reported ${report.ghostName} for ghosting. Thank you for your contribution!`
-    });
+      // Extract company name from the report
+      const companyName = report.companyName || "";
+
+      // Check if ghost already exists
+      const existingGhostIndex = ghostProfiles.findIndex(
+        ghost => ghost.name.toLowerCase() === report.ghostName.toLowerCase()
+      );
+
+      if (existingGhostIndex >= 0) {
+        // Update existing ghost
+        const updatedGhosts = [...ghostProfiles];
+        const ghost = updatedGhosts[existingGhostIndex];
+        
+        updatedGhosts[existingGhostIndex] = {
+          ...ghost,
+          recruiterName: report.ghostName,
+          company: companyName,
+          spookCount: ghost.spookCount + 1,
+          lastSeen: report.dateGhosted,
+          location: report.location || ghost.location,
+          victimVenmos: report.venmoHandle && !ghost.victimVenmos.includes(report.venmoHandle)
+            ? [...ghost.victimVenmos, report.venmoHandle]
+            : ghost.victimVenmos
+        };
+        
+        setGhostProfiles(updatedGhosts);
+      } else {
+        // Create new ghost
+        const newGhost: GhostProfile = {
+          id: Date.now().toString(),
+          name: report.ghostName,
+          recruiterName: report.ghostName,
+          company: companyName,
+          photoURL: report.ghostPhotoURL,
+          spookCount: 1,
+          lastSeen: report.dateGhosted,
+          location: report.location,
+          victimVenmos: report.venmoHandle ? [report.venmoHandle] : []
+        };
+        
+        setGhostProfiles(prev => [newGhost, ...prev]);
+      }
+
+      toast({
+        title: "Report submitted",
+        description: `You've reported ${report.ghostName} for ghosting. Thank you for your contribution!`
+      });
+    } catch (err) {
+      console.error("Error adding report:", err);
+      toast({
+        title: "Error",
+        description: "Failed to submit report. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const getGhostById = (id: string) => {
@@ -157,7 +243,9 @@ export function GhostProvider({ children }: { children: ReactNode }) {
     getGhostById,
     activeFilters,
     setActiveFilters,
-    isFiltering
+    isFiltering,
+    isLoading,
+    error
   };
 
   return <GhostContext.Provider value={value}>{children}</GhostContext.Provider>;

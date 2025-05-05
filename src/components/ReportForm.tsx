@@ -30,11 +30,13 @@ const formSchema = z.object({
   venmoHandle: z.string().optional(),
   location: z.string().optional()
 });
+
 type FormValues = z.infer<typeof formSchema>;
+
 const ReportForm = () => {
-  const {
-    addReport
-  } = useGhost();
+  const { addReport } = useGhost();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -48,27 +50,40 @@ const ReportForm = () => {
       location: ""
     }
   });
-  const onSubmit = (data: FormValues) => {
-    // Create a report object with all required fields explicitly defined
-    const reportData = {
-      reporterName: data.reporterName,
-      reporterEmail: data.reporterEmail,
-      ghostName: data.ghostName,
-      companyName: data.companyName,
-      ghostPhotoURL: data.ghostPhotoURL,
-      dateGhosted: data.dateGhosted,
-      evidenceURL: data.evidenceURL,
-      venmoHandle: data.venmoHandle,
-      location: data.location
-    };
-    addReport(reportData);
-    form.reset();
-    toast({
-      title: "Thanks for your report",
-      description: "If verified, we'll notify the employer."
-    });
+  
+  const onSubmit = async (data: FormValues) => {
+    setIsSubmitting(true);
+    
+    try {
+      // Create a report object with all required fields explicitly defined
+      const reportData = {
+        reporterName: data.reporterName,
+        reporterEmail: data.reporterEmail,
+        ghostName: data.ghostName,
+        companyName: data.companyName,
+        ghostPhotoURL: data.ghostPhotoURL,
+        dateGhosted: data.dateGhosted,
+        evidenceURL: data.evidenceURL,
+        venmoHandle: data.venmoHandle,
+        location: data.location
+      };
+      
+      await addReport(reportData);
+      form.reset();
+    } catch (error) {
+      console.error("Error submitting report:", error);
+      toast({
+        title: "Error",
+        description: "Failed to submit report. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
-  return <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+  
+  return (
+    <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>Report a Ghosting</DialogTitle>
         <DialogDescription>
@@ -181,12 +196,18 @@ const ReportForm = () => {
           </div>
           
           <DialogFooter className="pt-4">
-            <Button type="submit" className="w-full bg-black text-white hover:bg-gray-800">
-              Submit Report
+            <Button 
+              type="submit" 
+              className="w-full bg-black text-white hover:bg-gray-800"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Submitting..." : "Submit Report"}
             </Button>
           </DialogFooter>
         </form>
       </Form>
-    </DialogContent>;
+    </DialogContent>
+  );
 };
+
 export default ReportForm;
