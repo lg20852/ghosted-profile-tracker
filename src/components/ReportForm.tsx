@@ -1,3 +1,4 @@
+
 import React from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -100,9 +101,9 @@ const ReportForm = () => {
             <FormField control={form.control} name="ghostPhotoURL" render={({
             field
           }) => <FormItem>
-                  <FormLabel>Recruiter Photo URL (LinkedIn profile image)</FormLabel>
+                  <FormLabel>Recruiter LinkedIn (URL)</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://..." {...field} autoComplete="off" />
+                    <Input placeholder="https://www.linkedin.com/in/username" {...field} autoComplete="off" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>} />
@@ -140,9 +141,9 @@ const ReportForm = () => {
             <FormField control={form.control} name="evidenceURL" render={({
             field
           }) => <FormItem>
-                  <FormLabel>Evidence URL (screenshot or email)</FormLabel>
+                  <FormLabel>Evidence Google Drive Link</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://..." {...field} autoComplete="off" />
+                    <Input placeholder="https://drive.google.com/file/d/..." {...field} autoComplete="off" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>} />

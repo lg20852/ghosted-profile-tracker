@@ -38,9 +38,9 @@ export const GhostSection = ({ form }: GhostSectionProps) => {
         name="ghostPhotoURL"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Recruiter Photo or Company Logo URL (optional)</FormLabel>
+            <FormLabel>Recruiter LinkedIn (URL)</FormLabel>
             <FormControl>
-              <Input placeholder="https://example.com/logo.png" {...field} autoComplete="off" />
+              <Input placeholder="https://www.linkedin.com/in/username" {...field} autoComplete="off" />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -92,9 +92,9 @@ export const GhostSection = ({ form }: GhostSectionProps) => {
         name="evidenceURL"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Evidence URL or Note</FormLabel>
+            <FormLabel>Evidence Google Drive Link</FormLabel>
             <FormControl>
-              <Input placeholder="https://drive.google.com/file/..." {...field} autoComplete="off" />
+              <Input placeholder="https://drive.google.com/file/d/..." {...field} autoComplete="off" />
             </FormControl>
             <FormMessage />
           </FormItem>
