@@ -3,15 +3,25 @@ import { createClient } from '@supabase/supabase-js';
 import { Report, GhostProfile } from '@/types';
 
 // Types for Supabase tables
-export type ReportRow = Omit<Report, 'id' | 'dateGhosted' | 'createdAt'> & {
+export type ReportRow = {
   id?: string;
+  reporter_name: string;
+  reporter_email: string;
+  ghost_name: string;
+  company_name?: string;
+  ghost_photo_url: string;
   date_ghosted: string; // Postgres date format
+  evidence_url: string;
+  venmo_handle?: string;
+  location?: string;
   created_at?: string; // Postgres date format
 };
 
 // Create a Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+// Using placeholder values if environment variables are not set
+// These will be replaced with proper values after connecting to Supabase
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder-url.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-anon-key';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
