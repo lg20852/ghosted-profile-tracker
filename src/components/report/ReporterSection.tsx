@@ -39,20 +39,6 @@ export const ReporterSection = () => {
           </FormItem>
         )}
       />
-      
-      <FormField
-        control={form.control}
-        name="venmoHandle"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Your Venmo Handle (Optional)</FormLabel>
-            <FormControl>
-              <Input placeholder="@your-venmo" {...field} autoComplete="off" />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
     </div>
   );
 };

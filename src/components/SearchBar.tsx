@@ -33,6 +33,7 @@ const locations = [
 const SearchBar = () => {
   const { searchTerm, setSearchTerm, ghostProfiles, setActiveFilters, activeFilters, isFiltering } = useGhost();
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(false);
+  const [openPopover, setOpenPopover] = useState<string | null>(null);
 
   // Get unique company names and sort by report count
   const companies = React.useMemo(() => {
@@ -72,6 +73,7 @@ const SearchBar = () => {
     }
     
     setActiveFilters(newFilters);
+    setOpenPopover(null); // Close popover after selection
   };
 
   const toggleCompanyFilter = (company: string) => {
@@ -85,6 +87,7 @@ const SearchBar = () => {
         { type: 'company', label: `Company: ${company}`, value: company }
       ]);
     }
+    setOpenPopover(null); // Close popover after selection
   };
 
   const toggleLocationFilter = (location: string) => {
@@ -98,6 +101,7 @@ const SearchBar = () => {
         { type: 'location', label: `Location: ${location}`, value: location }
       ]);
     }
+    setOpenPopover(null); // Close popover after selection
   };
 
   const isFilterActive = (type: string, value?: any) => {
@@ -149,7 +153,7 @@ const SearchBar = () => {
       
       <div className="flex overflow-x-auto pb-2 mt-4 hide-scrollbar">
         <div className="flex flex-nowrap gap-2">
-          <Popover>
+          <Popover open={openPopover === 'date'} onOpenChange={(open) => setOpenPopover(open ? 'date' : null)}>
             <PopoverTrigger asChild>
               <span 
                 className={`px-3 py-1 rounded-full text-sm cursor-pointer whitespace-nowrap transition-colors flex items-center gap-1 ${
@@ -176,7 +180,7 @@ const SearchBar = () => {
             </PopoverContent>
           </Popover>
 
-          <Popover>
+          <Popover open={openPopover === 'company'} onOpenChange={(open) => setOpenPopover(open ? 'company' : null)}>
             <PopoverTrigger asChild>
               <span 
                 className={`px-3 py-1 rounded-full text-sm cursor-pointer whitespace-nowrap transition-colors flex items-center gap-1 ${
@@ -211,7 +215,7 @@ const SearchBar = () => {
             </PopoverContent>
           </Popover>
 
-          <Popover>
+          <Popover open={openPopover === 'location'} onOpenChange={(open) => setOpenPopover(open ? 'location' : null)}>
             <PopoverTrigger asChild>
               <span 
                 className={`px-3 py-1 rounded-full text-sm cursor-pointer whitespace-nowrap transition-colors flex items-center gap-1 ${
