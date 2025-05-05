@@ -20,7 +20,7 @@ export type ReportRow = {
 
 // Create a Supabase client with actual values
 const supabaseUrl = 'https://oorexbveomrxdqidfbbs.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9vcmV4YnZlb21yeGRxaWRmYmJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTUwMzk2ODYsImV4cCI6MjAzMDYxNTY4Nn0.TdU8KwXG0KDnXm6Sc晳湬';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9vcmV4YnZlb21yeGRxaWRmYmJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTUwMzk2ODYsImV4cCI6MjAzMDYxNTY4Nn0.TdU8KwXG0KDnXm6ScYUSdBfa0npfK4Uh4VUBi7NQjKE';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
