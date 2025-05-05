@@ -65,6 +65,7 @@ export async function fetchReports(): Promise<Report[]> {
     return (data || []).map(rowToReport);
   } catch (error) {
     console.error('Error fetching reports:', error);
+    // Return an empty array instead of mock data when there's an error
     return [];
   }
 }
@@ -91,46 +92,81 @@ export async function createReport(report: Report): Promise<Report | null> {
   }
 }
 
-// Function to migrate mock data to Supabase
-export async function migrateMockData(): Promise<void> {
+// Function to migrate mock data to Supabase - UPDATED to force migration of all mock data
+export async function migrateMockData(forceUpdate = true): Promise<void> {
   console.log("Starting migration of mock data to Supabase...");
   
   try {
-    // Check if data already exists
-    const { count, error: countError } = await supabase
-      .from('reports')
-      .select('*', { count: 'exact', head: true });
-    
-    if (countError) {
-      console.error('Error checking existing data:', countError);
-      return;
-    }
-    
-    // Only migrate if no data exists
-    if ((count || 0) === 0) {
-      console.log("No existing data found, proceeding with migration...");
+    // Check if data already exists only if we're not forcing the update
+    if (!forceUpdate) {
+      const { count, error: countError } = await supabase
+        .from('reports')
+        .select('*', { count: 'exact', head: true });
       
-      // Convert mock reports to rows
-      const reportRows = mockReports.map(reportToRow);
-      
-      // Insert mock reports one by one to prevent batch issues
-      let successCount = 0;
-      for (const row of reportRows) {
-        const { error } = await supabase
-          .from('reports')
-          .insert([row]);
-        
-        if (!error) {
-          successCount++;
-        } else {
-          console.error("Error migrating report:", error);
-        }
+      if (countError) {
+        console.error('Error checking existing data:', countError);
+        return;
       }
       
-      console.log(`Migration completed: ${successCount}/${reportRows.length} reports migrated`);
-    } else {
-      console.log("Data already exists in the database, skipping migration.");
+      // If data exists and we're not forcing an update, don't migrate
+      if ((count || 0) > 0) {
+        console.log("Data already exists in the database, skipping migration.");
+        return;
+      }
     }
+    
+    console.log("Proceeding with migration of all mock data...");
+    
+    // If we're forcing an update or no data exists, proceed with migration
+    // Convert mock reports to rows
+    const reportRows = mockReports.map(reportToRow);
+    
+    // Process each mock report
+    let successCount = 0;
+    for (const row of reportRows) {
+      // Check if this report (by ghostName and dateGhosted) already exists
+      const { data: existingData, error: existingError } = await supabase
+        .from('reports')
+        .select('id')
+        .eq('ghost_name', row.ghost_name)
+        .eq('date_ghosted', row.date_ghosted);
+        
+      if (existingError) {
+        console.error('Error checking for existing report:', existingError);
+        continue;
+      }
+      
+      // If it exists and we're forcing an update, update it; otherwise insert it
+      if (existingData && existingData.length > 0 && forceUpdate) {
+        const { error: updateError } = await supabase
+          .from('reports')
+          .update(row)
+          .eq('id', existingData[0].id);
+          
+        if (updateError) {
+          console.error('Error updating existing report:', updateError);
+        } else {
+          successCount++;
+          console.log(`Updated existing report for: ${row.ghost_name}`);
+        }
+      } else if (!existingData || existingData.length === 0) {
+        // Insert if it doesn't exist
+        const { error: insertError } = await supabase
+          .from('reports')
+          .insert([row]);
+          
+        if (insertError) {
+          console.error('Error inserting new report:', insertError);
+        } else {
+          successCount++;
+          console.log(`Inserted new report for: ${row.ghost_name}`);
+        }
+      } else {
+        console.log(`Skipped existing report for: ${row.ghost_name} (no force update)`);
+      }
+    }
+    
+    console.log(`Migration completed: ${successCount}/${reportRows.length} reports processed`);
   } catch (error) {
     console.error("Migration failed:", error);
   }

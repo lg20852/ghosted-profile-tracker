@@ -14,9 +14,6 @@ const GhostGrid = () => {
   // Sort by spook count (descending)
   const sortedGhosts = [...filteredGhosts].sort((a, b) => b.spookCount - a.spookCount);
   
-  // Show all ghosts or filtered results
-  const displayGhosts = searchTerm || activeFilters.length > 0 ? sortedGhosts : sortedGhosts;
-  
   if (isLoading) {
     return <LoadingState />;
   }
@@ -31,8 +28,18 @@ const GhostGrid = () => {
           </h3>
         </div>
         <p className="mt-2 text-gray-600">
-          We're still showing you data that was previously loaded.
+          Please add a report to get started.
         </p>
+        <div className="mt-4">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="border-black hover:bg-black hover:text-white transition-all">
+                Report a Ghosting
+              </Button>
+            </DialogTrigger>
+            <ReportForm />
+          </Dialog>
+        </div>
       </div>
     );
   }
@@ -41,7 +48,7 @@ const GhostGrid = () => {
     return <LoadingState />;
   }
   
-  if (displayGhosts.length === 0) {
+  if (sortedGhosts.length === 0) {
     return (
       <div className="text-center py-12">
         <h3 className="text-xl font-medium">
@@ -66,7 +73,7 @@ const GhostGrid = () => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-4">
-      {displayGhosts.map(ghost => (
+      {sortedGhosts.map(ghost => (
         <GhostCard key={ghost.id} ghost={ghost} />
       ))}
     </div>

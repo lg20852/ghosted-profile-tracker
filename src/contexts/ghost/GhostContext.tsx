@@ -1,18 +1,17 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { GhostProfile, Report } from "../../types";
-import { mockGhostProfiles } from "../../data/mockData";
 import { toast } from "@/components/ui/use-toast";
 import { fetchReports, createReport, migrateMockData } from "@/lib/supabase";
 import { initializeDatabase } from "@/lib/supabaseSetup";
 import { GhostContextType, Filter } from "./types";
-import { generateGhostProfiles, updateGhostFromReport } from "./ghostUtils";
+import { generateGhostProfiles } from "./ghostUtils";
 import { useGhostFilter } from "./useGhostFilter";
 
 const GhostContext = createContext<GhostContextType | undefined>(undefined);
 
 export function GhostProvider({ children }: { children: ReactNode }) {
-  const [ghostProfiles, setGhostProfiles] = useState<GhostProfile[]>(mockGhostProfiles);
+  const [ghostProfiles, setGhostProfiles] = useState<GhostProfile[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilters, setActiveFilters] = useState<Filter[]>([]);
@@ -24,7 +23,7 @@ export function GhostProvider({ children }: { children: ReactNode }) {
 
   // Fetch reports from Supabase on mount and migrate data if needed
   useEffect(() => {
-    async function loadReports() {
+    async function initializeApp() {
       setIsLoading(true);
       try {
         // Initialize the database to ensure the table exists
@@ -35,42 +34,47 @@ export function GhostProvider({ children }: { children: ReactNode }) {
           console.warn('Database initialization issues (continuing anyway):', err);
         }
         
-        // Then attempt to migrate mock data
+        // Force migration of all mock data to Supabase
         try {
-          await migrateMockData();
-          console.log("Mock data migrated successfully");
+          await migrateMockData(true); // Pass true to force migration of all data
+          console.log("Mock data migration completed");
         } catch (err) {
           console.warn('Data migration issues (continuing anyway):', err);
         }
         
-        // Then fetch all reports
-        let supabaseReports: Report[] = [];
+        // Then fetch all reports from Supabase
         try {
-          supabaseReports = await fetchReports();
+          const supabaseReports = await fetchReports();
           console.log(`Fetched ${supabaseReports.length} reports from Supabase`);
-          setReports(supabaseReports);
           
-          // Generate ghost profiles from reports, or use mock data if no reports
-          const profiles = supabaseReports.length > 0 
-            ? generateGhostProfiles(supabaseReports) 
-            : mockGhostProfiles;
-          
-          setGhostProfiles(profiles);
-          setError(null);
+          if (supabaseReports.length === 0) {
+            setError("No reports found in the database");
+            setReports([]);
+            setGhostProfiles([]);
+          } else {
+            setReports(supabaseReports);
+            // Generate ghost profiles ONLY from Supabase reports
+            const profiles = generateGhostProfiles(supabaseReports);
+            setGhostProfiles(profiles);
+            setError(null);
+          }
         } catch (err) {
           console.error("Failed to fetch reports:", err);
-          setError("Failed to load reports. Using mock data instead.");
-          // Keep the mock data as fallback
+          setError("Failed to load reports from the database");
+          setReports([]);
+          setGhostProfiles([]);
         }
       } catch (err) {
-        console.error("Top level error in loadReports:", err);
-        setError("Failed to initialize. Using mock data as fallback.");
+        console.error("Top level error in initializeApp:", err);
+        setError("Failed to initialize application");
+        setReports([]);
+        setGhostProfiles([]);
       } finally {
         setIsLoading(false);
       }
     }
     
-    loadReports();
+    initializeApp();
   }, []);
 
   const addReport = async (report: Report) => {
@@ -93,7 +97,10 @@ export function GhostProvider({ children }: { children: ReactNode }) {
       setReports(prev => [savedReport, ...prev]);
 
       // Update ghost profiles based on the new report
-      setGhostProfiles(prevGhosts => updateGhostFromReport(prevGhosts, savedReport));
+      setGhostProfiles(prevGhosts => {
+        const updatedGhosts = generateGhostProfiles([savedReport, ...reports]);
+        return updatedGhosts;
+      });
 
       toast({
         title: "Report submitted",
