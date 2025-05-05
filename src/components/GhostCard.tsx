@@ -38,14 +38,14 @@ const GhostCard: React.FC<GhostCardProps> = ({ ghost }) => {
         )}
         
         <div className="text-gray-600 mb-6 space-y-2 w-full">
-          <p className="font-medium flex items-center justify-center">
+          <div className="flex items-center justify-center w-full">
             <AlertTriangle size={16} className="text-amber-500 flex-shrink-0 mr-2" />
-            Reported {ghost.spookCount} times for ghosting
-          </p>
-          <p className="text-sm flex items-center justify-center">
+            <span>Reported {ghost.spookCount} times for ghosting</span>
+          </div>
+          <div className="flex items-center justify-center w-full">
             <Calendar size={14} className="flex-shrink-0 mr-2" />
-            Last report: {format(ghost.lastSeen, 'yyyy-MM-dd')}
-          </p>
+            <span>Last report: {format(ghost.lastSeen, 'yyyy-MM-dd')}</span>
+          </div>
         </div>
         
         <Button 
