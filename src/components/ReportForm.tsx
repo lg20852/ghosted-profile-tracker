@@ -1,4 +1,3 @@
-
 import React from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -16,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { toast } from "@/components/ui/use-toast";
 import { ReporterSection } from "./report/ReporterSection";
 import { GhostSection } from "./report/GhostSection";
+
 const formSchema = z.object({
   reporterName: z.string().min(2, "Name is required"),
   reporterEmail: z.string().email("Valid email is required"),
@@ -101,7 +101,7 @@ const ReportForm = () => {
             <FormField control={form.control} name="ghostPhotoURL" render={({
             field
           }) => <FormItem>
-                  <FormLabel>Recruiter LinkedIn (URL)</FormLabel>
+                  <FormLabel>Recruiter (Linkedin)</FormLabel>
                   <FormControl>
                     <Input placeholder="https://www.linkedin.com/in/username" {...field} autoComplete="off" />
                   </FormControl>
@@ -141,7 +141,7 @@ const ReportForm = () => {
             <FormField control={form.control} name="evidenceURL" render={({
             field
           }) => <FormItem>
-                  <FormLabel>Evidence Google Drive Link</FormLabel>
+                  <FormLabel>Evidence (Google Drive)</FormLabel>
                   <FormControl>
                     <Input placeholder="https://drive.google.com/file/d/..." {...field} autoComplete="off" />
                   </FormControl>
