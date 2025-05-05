@@ -3,7 +3,7 @@ import { GhostProfile, Report } from "../types";
 import { mockGhostProfiles } from "../data/mockData";
 import { toast } from "@/components/ui/use-toast";
 import { isAfter, isBefore, subDays } from "date-fns";
-import { fetchReports, createReport } from "@/lib/supabase";
+import { fetchReports, createReport, migrateMockData } from "@/lib/supabase";
 
 // Define the filter type
 export interface Filter {
@@ -38,11 +38,15 @@ export function GhostProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch reports from Supabase on mount
+  // Fetch reports from Supabase on mount and migrate data if needed
   useEffect(() => {
     async function loadReports() {
       setIsLoading(true);
       try {
+        // First attempt to migrate mock data
+        await migrateMockData();
+        
+        // Then fetch all reports
         const supabaseReports = await fetchReports();
         setReports(supabaseReports);
         

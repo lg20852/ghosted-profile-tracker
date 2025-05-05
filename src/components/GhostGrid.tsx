@@ -6,6 +6,7 @@ import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import ReportForm from "./ReportForm";
 import { Button } from "./ui/button";
 import LoadingState from "./LoadingState";
+import { AlertCircle } from "lucide-react";
 
 const GhostGrid = () => {
   const { filteredGhosts, searchTerm, isFiltering, activeFilters, isLoading, error } = useGhost();
@@ -23,9 +24,12 @@ const GhostGrid = () => {
   if (error) {
     return (
       <div className="text-center py-12">
-        <h3 className="text-xl font-medium text-red-600">
-          {error}
-        </h3>
+        <div className="inline-flex items-center gap-2 text-red-600 mb-2">
+          <AlertCircle size={20} />
+          <h3 className="text-xl font-medium">
+            {error}
+          </h3>
+        </div>
         <p className="mt-2 text-gray-600">
           We're still showing you data that was previously loaded.
         </p>

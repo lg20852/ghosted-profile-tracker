@@ -1,6 +1,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { Report, GhostProfile } from '@/types';
+import { mockReports } from '@/data/mockData';
 
 // Types for Supabase tables
 export type ReportRow = {
@@ -17,11 +18,9 @@ export type ReportRow = {
   created_at?: string; // Postgres date format
 };
 
-// Create a Supabase client
-// Using placeholder values if environment variables are not set
-// These will be replaced with proper values after connecting to Supabase
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder-url.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-anon-key';
+// Create a Supabase client with actual values
+const supabaseUrl = 'https://oorexbveomrxdqidfbbs.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9vcmV4YnZlb21yeGRxaWRmYmJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTUwMzk2ODYsImV4cCI6MjAzMDYxNTY4Nn0.TdU8KwXG0KDnXm6Sc晳湬';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -93,5 +92,45 @@ export async function createReport(report: Report): Promise<Report | null> {
   } catch (error) {
     console.error('Error creating report:', error);
     return null;
+  }
+}
+
+// Function to migrate mock data to Supabase
+export async function migrateMockData(): Promise<void> {
+  console.log("Starting migration of mock data to Supabase...");
+  
+  try {
+    // Check if data already exists
+    const { count, error: countError } = await supabase
+      .from('reports')
+      .select('*', { count: 'exact', head: true });
+    
+    if (countError) {
+      throw countError;
+    }
+    
+    // Only migrate if no data exists
+    if ((count || 0) === 0) {
+      console.log("No existing data found, proceeding with migration...");
+      
+      // Convert mock reports to rows
+      const reportRows = mockReports.map(reportToRow);
+      
+      // Insert all mock reports
+      const { error } = await supabase
+        .from('reports')
+        .insert(reportRows);
+      
+      if (error) {
+        throw error;
+      }
+      
+      console.log("Migration successful! Migrated", reportRows.length, "reports.");
+    } else {
+      console.log("Data already exists in the database, skipping migration.");
+    }
+  } catch (error) {
+    console.error("Migration failed:", error);
+    throw error;
   }
 }
