@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { GhostProfile, Report } from "../../types";
 import { mockGhostProfiles } from "../../data/mockData";
@@ -26,7 +27,7 @@ export function GhostProvider({ children }: { children: ReactNode }) {
     async function loadReports() {
       setIsLoading(true);
       try {
-        // Initialize the database first to ensure the table exists
+        // Initialize the database to ensure the table exists
         try {
           await initializeDatabase();
           console.log("Database initialized successfully");
