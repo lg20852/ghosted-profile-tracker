@@ -64,6 +64,7 @@ export async function fetchReports(): Promise<Report[]> {
       .order('created_at', { ascending: false });
       
     if (error) {
+      console.error('Error fetching reports:', error);
       throw error;
     }
     
@@ -85,13 +86,14 @@ export async function createReport(report: Report): Promise<Report | null> {
       .single();
       
     if (error) {
+      console.error('Error creating report:', error);
       throw error;
     }
     
-    return rowToReport(data);
+    return data ? rowToReport(data) : null;
   } catch (error) {
     console.error('Error creating report:', error);
-    return null;
+    throw error;
   }
 }
 
@@ -106,7 +108,9 @@ export async function migrateMockData(): Promise<void> {
       .select('*', { count: 'exact', head: true });
     
     if (countError) {
-      throw countError;
+      console.error('Error checking existing data:', countError);
+      // Table might not exist yet, we'll create it via setup
+      return;
     }
     
     // Only migrate if no data exists
@@ -116,21 +120,25 @@ export async function migrateMockData(): Promise<void> {
       // Convert mock reports to rows
       const reportRows = mockReports.map(reportToRow);
       
-      // Insert all mock reports
-      const { error } = await supabase
-        .from('reports')
-        .insert(reportRows);
-      
-      if (error) {
-        throw error;
+      // Insert mock reports one by one to prevent batch issues
+      let successCount = 0;
+      for (const row of reportRows) {
+        const { error } = await supabase
+          .from('reports')
+          .insert([row]);
+        
+        if (!error) {
+          successCount++;
+        } else {
+          console.error("Error migrating report:", error);
+        }
       }
       
-      console.log("Migration successful! Migrated", reportRows.length, "reports.");
+      console.log(`Migration completed: ${successCount}/${reportRows.length} reports migrated`);
     } else {
       console.log("Data already exists in the database, skipping migration.");
     }
   } catch (error) {
     console.error("Migration failed:", error);
-    throw error;
   }
 }

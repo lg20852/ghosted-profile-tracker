@@ -27,26 +27,43 @@ export function GhostProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       try {
         // Initialize the database first to ensure the table exists
-        await initializeDatabase()
-          .catch(err => {
-            console.warn('Database initialization issues (continuing anyway):', err);
-          });
+        try {
+          await initializeDatabase();
+          console.log("Database initialized successfully");
+        } catch (err) {
+          console.warn('Database initialization issues (continuing anyway):', err);
+        }
         
         // Then attempt to migrate mock data
-        await migrateMockData();
+        try {
+          await migrateMockData();
+          console.log("Mock data migrated successfully");
+        } catch (err) {
+          console.warn('Data migration issues (continuing anyway):', err);
+        }
         
         // Then fetch all reports
-        const supabaseReports = await fetchReports();
-        setReports(supabaseReports);
-        
-        // Generate ghost profiles from reports
-        const profiles = generateGhostProfiles(supabaseReports);
-        setGhostProfiles(profiles);
-        setError(null);
+        let supabaseReports: Report[] = [];
+        try {
+          supabaseReports = await fetchReports();
+          console.log(`Fetched ${supabaseReports.length} reports from Supabase`);
+          setReports(supabaseReports);
+          
+          // Generate ghost profiles from reports, or use mock data if no reports
+          const profiles = supabaseReports.length > 0 
+            ? generateGhostProfiles(supabaseReports) 
+            : mockGhostProfiles;
+          
+          setGhostProfiles(profiles);
+          setError(null);
+        } catch (err) {
+          console.error("Failed to fetch reports:", err);
+          setError("Failed to load reports. Using mock data instead.");
+          // Keep the mock data as fallback
+        }
       } catch (err) {
-        console.error("Failed to fetch reports:", err);
-        setError("Failed to load reports. Please try again later.");
-        // Keep the mock data as fallback
+        console.error("Top level error in loadReports:", err);
+        setError("Failed to initialize. Using mock data as fallback.");
       } finally {
         setIsLoading(false);
       }
@@ -81,6 +98,8 @@ export function GhostProvider({ children }: { children: ReactNode }) {
         title: "Report submitted",
         description: `You've reported ${report.ghostName} for ghosting. Thank you for your contribution!`
       });
+      
+      return savedReport;
     } catch (err) {
       console.error("Error adding report:", err);
       toast({
@@ -88,6 +107,7 @@ export function GhostProvider({ children }: { children: ReactNode }) {
         description: "Failed to submit report. Please try again.",
         variant: "destructive"
       });
+      throw err;
     }
   };
 
