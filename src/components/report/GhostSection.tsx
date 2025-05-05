@@ -79,6 +79,8 @@ export const GhostSection = ({ form }: GhostSectionProps) => {
                   onSelect={field.onChange}
                   disabled={(date) => date > new Date()}
                   initialFocus
+                  fromYear={2010}
+                  toDate={new Date()}
                   className="pointer-events-auto"
                 />
               </PopoverContent>
