@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, ReactNode } from "react";
 import { GhostProfile, Report } from "../types";
 import { mockGhostProfiles, mockReports } from "../data/mockData";
 import { toast } from "@/components/ui/use-toast";
+import { isAfter, isBefore, subDays } from "date-fns";
 
 // Define the filter type
 export interface Filter {
@@ -61,11 +62,16 @@ export function GhostProvider({ children }: { children: ReactNode }) {
               return ghost.location?.toLowerCase() === filter.value.toLowerCase();
             
             default:
-              // Handle date filters by checking if the ghost's lastSeen date is after the cutoff date
+              // Handle date filters - check if ghost's lastSeen date is within the specified timeframe
               if (filter.type.startsWith('date-')) {
-                const cutoffDate = filter.value;
-                const lastSeenDate = new Date(ghost.lastSeen);
-                return lastSeenDate >= cutoffDate;
+                const currentDate = new Date();
+                const days = parseInt(filter.type.split('-')[1]);
+                const cutoffDate = subDays(currentDate, days);
+                
+                // Check if ghost's lastSeen date is after the cutoff date (within the specified days)
+                // This means the ghost was reported within the last X days
+                return isAfter(ghost.lastSeen, cutoffDate) || 
+                       ghost.lastSeen.getTime() === cutoffDate.getTime();
               }
               return true;
           }
