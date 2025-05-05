@@ -31,8 +31,7 @@ const createReportsTable = async (): Promise<void> => {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://zaktygshxiqitamkkvzx.supabase.co';
     const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpha3R5Z3NoeGlxaXRhbWtrdnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY0MDY3OTEsImV4cCI6MjA2MTk4Mjc5MX0.CQ2I3GqPL0IfdlxjIhfEWjg-fkOo0Q06jJghPV2xsEY';
     
-    // Try using the SQL RPC function first
-    // Fix: Change how we call the RPC function - use empty object instead of empty string
+    // Try using the SQL RPC function first, without any parameters
     const { error: rpcError } = await supabase.rpc('create_reports_table');
     
     if (!rpcError) {
