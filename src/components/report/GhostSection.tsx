@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,9 @@ interface GhostSectionProps {
 }
 
 export const GhostSection = ({ form }: GhostSectionProps) => {
+  // Add state to control the open/close state of the date picker popover
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-medium">About the Recruiter/Company</h3>
@@ -53,7 +56,7 @@ export const GhostSection = ({ form }: GhostSectionProps) => {
         render={({ field }) => (
           <FormItem className="flex flex-col">
             <FormLabel>Date Ghosted</FormLabel>
-            <Popover>
+            <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
               <PopoverTrigger asChild>
                 <FormControl>
                   <Button
@@ -76,7 +79,11 @@ export const GhostSection = ({ form }: GhostSectionProps) => {
                 <Calendar
                   mode="single"
                   selected={field.value}
-                  onSelect={field.onChange}
+                  onSelect={(date) => {
+                    field.onChange(date);
+                    // Close the popover when a date is selected
+                    setDatePickerOpen(false);
+                  }}
                   disabled={(date) => date > new Date()}
                   initialFocus
                   fromYear={2010}

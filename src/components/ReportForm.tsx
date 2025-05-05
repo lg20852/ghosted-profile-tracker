@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -36,6 +36,8 @@ type FormValues = z.infer<typeof formSchema>;
 const ReportForm = () => {
   const { addReport } = useGhost();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  // Add state to control the open/close state of the date picker popover
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -128,7 +130,7 @@ const ReportForm = () => {
             field
           }) => <FormItem className="flex flex-col">
                   <FormLabel>Date Ghosted</FormLabel>
-                  <Popover>
+                  <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
@@ -151,7 +153,11 @@ const ReportForm = () => {
                       <Calendar
                         mode="single"
                         selected={field.value}
-                        onSelect={field.onChange}
+                        onSelect={(date) => {
+                          field.onChange(date);
+                          // Close the popover when a date is selected
+                          setDatePickerOpen(false);
+                        }}
                         disabled={(date) => date > new Date()}
                         initialFocus
                         fromYear={2010}
