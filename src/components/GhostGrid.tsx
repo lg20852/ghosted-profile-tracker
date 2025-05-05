@@ -1,7 +1,7 @@
 
 import React from "react";
 import GhostCard from "./GhostCard";
-import { useGhost } from "@/contexts/GhostContext";
+import { useGhost } from "@/contexts/ghost";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import ReportForm from "./ReportForm";
 import { Button } from "./ui/button";

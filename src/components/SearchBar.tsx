@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Input } from "./ui/input";
-import { useGhost } from "@/contexts/GhostContext";
+import { useGhost } from "@/contexts/ghost";
 import { Search, Calendar, Building, Map as MapIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { 
