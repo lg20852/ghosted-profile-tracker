@@ -43,8 +43,8 @@ const createReportsTableDirectly = async (): Promise<void> => {
       if (error) {
         console.error('Error creating reports table via RPC:', error);
         
-        // As a fallback, we'll run raw SQL (note: this requires more permissions)
-        const { error: sqlError } = await supabase.sql`
+        // As a fallback, use a raw SQL query (using the proper method)
+        const createTableSQL = `
           CREATE TABLE IF NOT EXISTS reports (
             id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
             reporter_name TEXT NOT NULL,
@@ -59,6 +59,8 @@ const createReportsTableDirectly = async (): Promise<void> => {
             created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
           );
         `;
+        
+        const { error: sqlError } = await supabase.rpc('exec_sql', { sql_query: createTableSQL });
         
         if (sqlError) {
           throw sqlError;
@@ -113,10 +115,18 @@ export const setupDatabaseFunctions = async (): Promise<void> => {
       END IF;
     END;
     $$ LANGUAGE plpgsql SECURITY DEFINER;
+    
+    CREATE OR REPLACE FUNCTION exec_sql(sql_query TEXT)
+    RETURNS VOID AS $$
+    BEGIN
+      EXECUTE sql_query;
+    END;
+    $$ LANGUAGE plpgsql SECURITY DEFINER;
     `;
     
     // This will likely fail in most cases due to permission issues, but we'll try
-    const { error } = await supabase.sql(createTableFunctionSQL);
+    // using a better approach for executing SQL
+    const { error } = await supabase.rpc('exec_sql', { sql_query: createTableFunctionSQL });
     
     if (error) {
       console.warn('Could not create database functions (this is expected if you do not have admin privileges):', error);
