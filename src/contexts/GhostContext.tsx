@@ -4,6 +4,7 @@ import { mockGhostProfiles } from "../data/mockData";
 import { toast } from "@/components/ui/use-toast";
 import { isAfter, isBefore, subDays } from "date-fns";
 import { fetchReports, createReport, migrateMockData } from "@/lib/supabase";
+import { initializeDatabase } from "@/lib/supabaseSetup";
 
 // Define the filter type
 export interface Filter {
@@ -43,7 +44,13 @@ export function GhostProvider({ children }: { children: ReactNode }) {
     async function loadReports() {
       setIsLoading(true);
       try {
-        // First attempt to migrate mock data
+        // Initialize the database first to ensure the table exists
+        await initializeDatabase()
+          .catch(err => {
+            console.warn('Database initialization issues (continuing anyway):', err);
+          });
+        
+        // Then attempt to migrate mock data
         await migrateMockData();
         
         // Then fetch all reports
