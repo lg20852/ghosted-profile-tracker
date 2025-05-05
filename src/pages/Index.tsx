@@ -4,7 +4,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import GhostGrid from "@/components/GhostGrid";
 import SearchBar from "@/components/SearchBar";
-import { useGhost } from "@/contexts/GhostContext";
+import { useGhost } from "@/contexts/ghost/GhostContext"; // Updated import path
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import ReportForm from "@/components/ReportForm";
