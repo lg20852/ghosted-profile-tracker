@@ -10,7 +10,6 @@ import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import ReportForm from "@/components/ReportForm";
 import FloatingReportButton from "@/components/FloatingReportButton";
 import LoadingState from "@/components/LoadingState";
-import AdminControls from "@/components/AdminControls";
 
 const Index = () => {
   const {
@@ -64,7 +63,6 @@ const Index = () => {
       
       <Footer />
       <FloatingReportButton />
-      <AdminControls />
     </div>
   );
 };
