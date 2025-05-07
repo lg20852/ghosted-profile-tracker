@@ -20,12 +20,30 @@ export type ReportRow = {
 
 // Helper functions to convert between Report interface and ReportRow (database format)
 export function reportToRow(report: Report): ReportRow {
+  // Generate a stock company image based on company name instead of using the user-provided photo URL
+  const companyName = report.companyName || report.ghostName;
+  const companyImageId = Math.abs(companyName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 10) + 1;
+  const stockImageId = [
+    "photo-1487958449943-2429e8be8625",
+    "photo-1518005020951-eccb494ad742",
+    "photo-1496307653780-42ee777d4833",
+    "photo-1431576901776-e539bd916ba2",
+    "photo-1449157291145-7efd050a4d0e",
+    "photo-1459767129954-1b1c1f9b9ace",
+    "photo-1460574283810-2aab119d8511",
+    "photo-1551038247-3d9af20df552",
+    "photo-1524230572899-a752b3835840",
+    "photo-1493397212122-2b85dda8106b"
+  ][companyImageId - 1];
+  
+  const companyImageUrl = `https://images.unsplash.com/${stockImageId}?auto=format&fit=crop&w=300&h=300&q=80`;
+  
   return {
     reporter_name: report.reporterName,
     reporter_email: report.reporterEmail,
     ghost_name: report.ghostName,
     company_name: report.companyName,
-    ghost_photo_url: report.ghostPhotoURL,
+    ghost_photo_url: companyImageUrl, // Use the generated company image
     date_ghosted: report.dateGhosted.toISOString(),
     evidence_url: report.evidenceURL,
     venmo_handle: report.venmoHandle,
@@ -92,14 +110,14 @@ export async function createReport(report: Report): Promise<Report | null> {
   }
 }
 
-// Function to migrate mock data to Supabase - UPDATED to force migration of all mock data
+// Function to migrate mock data to Supabase with updated company images
 export async function migrateMockData(forceUpdate = true): Promise<void> {
   console.log("Starting migration of mock data to Supabase...");
   
   try {
     console.log("Proceeding with migration of all mock data...");
     
-    // Convert mock reports to rows
+    // Convert mock reports to rows with company images
     const reportRows = mockReports.map(reportToRow);
     
     // Process each mock report

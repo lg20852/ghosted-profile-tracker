@@ -26,11 +26,29 @@ const GhostCard: React.FC<GhostCardProps> = ({ ghost }) => {
   // Get initials for avatar fallback
   const initials = displayName.substring(0, 2).toUpperCase();
 
+  // Generate a stock building/office image for the company
+  // This will give us a consistent but unique image per company
+  const companyImageId = Math.abs(displayName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 10) + 1;
+  const stockImageId = [
+    "photo-1487958449943-2429e8be8625",
+    "photo-1518005020951-eccb494ad742",
+    "photo-1496307653780-42ee777d4833",
+    "photo-1431576901776-e539bd916ba2",
+    "photo-1449157291145-7efd050a4d0e",
+    "photo-1459767129954-1b1c1f9b9ace",
+    "photo-1460574283810-2aab119d8511",
+    "photo-1551038247-3d9af20df552",
+    "photo-1524230572899-a752b3835840",
+    "photo-1493397212122-2b85dda8106b"
+  ][companyImageId - 1];
+  
+  const companyImageUrl = `https://images.unsplash.com/${stockImageId}?auto=format&fit=crop&w=300&h=300&q=80`;
+
   return (
     <Card className="overflow-hidden hover:shadow-md transition-all hover:translate-y-[-3px] cursor-pointer">
       <CardContent className="p-6 flex flex-col items-center text-center">
         <Avatar className="h-24 w-24 mb-4">
-          <AvatarImage src={ghost.photoURL} alt={displayName} />
+          <AvatarImage src={companyImageUrl} alt={displayName} />
           <AvatarFallback>{initials}</AvatarFallback>
         </Avatar>
         
