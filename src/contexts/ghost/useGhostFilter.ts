@@ -20,10 +20,10 @@ export const useGhostFilter = (
     if (searchTerm) {
       result = result.filter(ghost => {
         const nameMatch = ghost.name.toLowerCase().includes(searchTerm.toLowerCase());
-        const recruiterMatch = ghost.recruiterName?.toLowerCase().includes(searchTerm.toLowerCase());
         const companyMatch = ghost.company?.toLowerCase().includes(searchTerm.toLowerCase());
         
-        return nameMatch || recruiterMatch || companyMatch;
+        // Prioritize company matches over recruiter name matches
+        return companyMatch || nameMatch;
       });
     }
     

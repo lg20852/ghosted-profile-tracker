@@ -31,8 +31,8 @@ const Index = () => {
       
       <main className="container max-w-5xl mx-auto py-8 px-6 flex-grow">
         <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold mb-4">Hold Recruiters Accountable for Ghosting</h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">Search reports of ghosting. Share your experience. Verified reports may qualify for $500 employer-paid compensation.</p>
+          <h1 className="text-4xl font-bold mb-4">Hold Companies Accountable for Ghosting</h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">Search reports of ghosting by companies. Share your experience. Each verified report qualifies for $500 employer-paid compensation.</p>
           
           <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
             <Dialog>
