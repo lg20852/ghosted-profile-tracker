@@ -1,4 +1,3 @@
-
 import React, { useRef } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -10,28 +9,23 @@ import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import ReportForm from "@/components/ReportForm";
 import FloatingReportButton from "@/components/FloatingReportButton";
 import LoadingState from "@/components/LoadingState";
-
 const Index = () => {
   const {
     searchTerm,
     isLoading
   } = useGhost();
-  
   const searchSectionRef = useRef<HTMLDivElement>(null);
-  
   const scrollToSearch = () => {
     searchSectionRef.current?.scrollIntoView({
       behavior: "smooth"
     });
   };
-  
-  return (
-    <div className="flex flex-col min-h-screen">
+  return <div className="flex flex-col min-h-screen">
       <Header />
       
       <main className="container max-w-5xl mx-auto py-8 px-6 flex-grow">
         <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold mb-4">Hold Companies Accountable for Ghosting</h1>
+          <h1 className="text-4xl font-bold mb-4">Hold Recruiters Accountable for Ghosting</h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">Search reports of ghosting by companies. Share your experience. Each verified report qualifies for $500 employer-paid compensation.</p>
           
           <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
@@ -63,8 +57,6 @@ const Index = () => {
       
       <Footer />
       <FloatingReportButton />
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
