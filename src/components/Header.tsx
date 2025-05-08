@@ -1,11 +1,12 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 const Header = () => {
   return (
     <header className="border-b border-gray-200 py-4 px-6">
-      <div className="flex justify-center md:justify-start">
+      <div className="container max-w-5xl mx-auto flex justify-between items-center">
         <Link to="/" className="flex items-center gap-2">
           <svg 
             xmlns="http://www.w3.org/2000/svg" 
@@ -21,6 +22,12 @@ const Header = () => {
           </svg>
           <span className="text-2xl font-bold">Ghosted</span>
         </Link>
+        
+        <nav className="hidden md:flex items-center gap-6">
+          <Link to="/how-it-works" className="text-gray-700 hover:text-black transition-colors">
+            How It Works
+          </Link>
+        </nav>
       </div>
     </header>
   );
