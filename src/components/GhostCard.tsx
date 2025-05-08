@@ -20,7 +20,7 @@ const GhostCard: React.FC<GhostCardProps> = ({ ghost }) => {
     );
   };
 
-  // Use company name as the main display, fallback to name if company is not available
+  // Use company name as the main display
   const displayName = ghost.company || ghost.name;
   
   // Get initials for avatar fallback
@@ -57,7 +57,7 @@ const GhostCard: React.FC<GhostCardProps> = ({ ghost }) => {
         <div className="text-gray-600 mb-6 space-y-2 w-full">
           <div className="flex items-center justify-center w-full">
             <AlertTriangle size={16} className="text-amber-500 flex-shrink-0 mr-2" />
-            <span>Reported {ghost.spookCount} times for ghosting</span>
+            <span>Reported {ghost.spookCount} {ghost.spookCount === 1 ? "time" : "times"} for ghosting</span>
           </div>
           <div className="flex items-center justify-center w-full">
             <Calendar size={14} className="flex-shrink-0 mr-2" />

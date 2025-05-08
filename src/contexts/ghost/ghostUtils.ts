@@ -7,30 +7,36 @@ export const generateGhostProfiles = (reportList: Report[]): GhostProfile[] => {
   
   // Process each report to create or update ghost profiles
   reportList.forEach(report => {
-    const ghostKey = report.ghostName.toLowerCase();
+    // Use company name as the key if available, otherwise use ghost name
+    // This ensures all reports from the same company are grouped together
+    const companyName = report.companyName || report.ghostName;
+    const profileKey = companyName.toLowerCase();
     
-    if (profileMap.has(ghostKey)) {
-      // Update existing ghost
-      const existingGhost = profileMap.get(ghostKey)!;
+    if (profileMap.has(profileKey)) {
+      // Update existing company profile
+      const existingProfile = profileMap.get(profileKey)!;
       
-      profileMap.set(ghostKey, {
-        ...existingGhost,
-        recruiterName: report.ghostName,
-        company: report.companyName || existingGhost.company,
-        spookCount: existingGhost.spookCount + 1,
-        lastSeen: report.dateGhosted > existingGhost.lastSeen ? report.dateGhosted : existingGhost.lastSeen,
-        location: report.location || existingGhost.location,
-        victimVenmos: report.venmoHandle && !existingGhost.victimVenmos.includes(report.venmoHandle)
-          ? [...existingGhost.victimVenmos, report.venmoHandle]
-          : existingGhost.victimVenmos
+      profileMap.set(profileKey, {
+        ...existingProfile,
+        name: companyName, // Ensure the display name is the company name
+        recruiterName: report.ghostName !== existingProfile.recruiterName ? 
+          `${existingProfile.recruiterName}, ${report.ghostName}` : 
+          existingProfile.recruiterName,
+        company: companyName,
+        spookCount: existingProfile.spookCount + 1,
+        lastSeen: report.dateGhosted > existingProfile.lastSeen ? report.dateGhosted : existingProfile.lastSeen,
+        location: report.location || existingProfile.location,
+        victimVenmos: report.venmoHandle && !existingProfile.victimVenmos.includes(report.venmoHandle)
+          ? [...existingProfile.victimVenmos, report.venmoHandle]
+          : existingProfile.victimVenmos
       });
     } else {
-      // Create new ghost
-      profileMap.set(ghostKey, {
+      // Create new company profile
+      profileMap.set(profileKey, {
         id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
-        name: report.ghostName,
+        name: companyName, // Use company name as the primary name
         recruiterName: report.ghostName,
-        company: report.companyName,
+        company: companyName,
         photoURL: report.ghostPhotoURL,
         spookCount: 1,
         lastSeen: report.dateGhosted,
@@ -48,36 +54,39 @@ export const updateGhostFromReport = (
   ghostProfiles: GhostProfile[], 
   report: Report
 ): GhostProfile[] => {
-  const existingGhostIndex = ghostProfiles.findIndex(
-    ghost => ghost.name.toLowerCase() === report.ghostName.toLowerCase()
+  // Use company name as the key if available, otherwise use ghost name
+  const companyName = report.companyName || report.ghostName;
+  
+  const existingProfileIndex = ghostProfiles.findIndex(
+    profile => (profile.company || '').toLowerCase() === companyName.toLowerCase()
   );
 
-  // Extract company name from the report
-  const companyName = report.companyName || "";
-
-  if (existingGhostIndex >= 0) {
-    // Update existing ghost
-    const updatedGhosts = [...ghostProfiles];
-    const ghost = updatedGhosts[existingGhostIndex];
+  if (existingProfileIndex >= 0) {
+    // Update existing company profile
+    const updatedProfiles = [...ghostProfiles];
+    const profile = updatedProfiles[existingProfileIndex];
     
-    updatedGhosts[existingGhostIndex] = {
-      ...ghost,
-      recruiterName: report.ghostName,
+    updatedProfiles[existingProfileIndex] = {
+      ...profile,
+      name: companyName, // Ensure the display name is the company name
+      recruiterName: report.ghostName !== profile.recruiterName ? 
+        `${profile.recruiterName}, ${report.ghostName}` : 
+        profile.recruiterName,
       company: companyName,
-      spookCount: ghost.spookCount + 1,
-      lastSeen: report.dateGhosted,
-      location: report.location || ghost.location,
-      victimVenmos: report.venmoHandle && !ghost.victimVenmos.includes(report.venmoHandle)
-        ? [...ghost.victimVenmos, report.venmoHandle]
-        : ghost.victimVenmos
+      spookCount: profile.spookCount + 1,
+      lastSeen: report.dateGhosted > profile.lastSeen ? report.dateGhosted : profile.lastSeen,
+      location: report.location || profile.location,
+      victimVenmos: report.venmoHandle && !profile.victimVenmos.includes(report.venmoHandle)
+        ? [...profile.victimVenmos, report.venmoHandle]
+        : profile.victimVenmos
     };
     
-    return updatedGhosts;
+    return updatedProfiles;
   } else {
-    // Create new ghost
-    const newGhost: GhostProfile = {
+    // Create new company profile
+    const newProfile: GhostProfile = {
       id: Date.now().toString(),
-      name: report.ghostName,
+      name: companyName, // Use company name as the primary name
       recruiterName: report.ghostName,
       company: companyName,
       photoURL: report.ghostPhotoURL,
@@ -87,6 +96,6 @@ export const updateGhostFromReport = (
       victimVenmos: report.venmoHandle ? [report.venmoHandle] : []
     };
     
-    return [newGhost, ...ghostProfiles];
+    return [newProfile, ...ghostProfiles];
   }
 };
