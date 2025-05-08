@@ -4,7 +4,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
-import { DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useGhost } from "@/contexts/ghost/GhostContext"; // Updated import path
@@ -38,6 +38,8 @@ const ReportForm = () => {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   // Add state to control the open/close state of the date picker popover
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  // Add reference to DialogClose component
+  const dialogCloseRef = React.useRef<HTMLButtonElement>(null);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -72,6 +74,11 @@ const ReportForm = () => {
       
       await addReport(reportData);
       form.reset();
+      
+      // Close dialog after successful submission
+      if (dialogCloseRef.current) {
+        dialogCloseRef.current.click();
+      }
     } catch (error) {
       console.error("Error submitting report:", error);
       toast({
@@ -92,6 +99,9 @@ const ReportForm = () => {
           Report recruiters or companies that have ghosted you during the hiring process.
         </DialogDescription>
       </DialogHeader>
+      
+      {/* Hidden DialogClose component that we can programmatically trigger */}
+      <DialogClose ref={dialogCloseRef} className="hidden" />
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" autoComplete="off">
