@@ -1,6 +1,6 @@
 
-import React, { useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useRef, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Clipboard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -11,6 +11,17 @@ const HowItWorks = () => {
   const { toast } = useToast();
   const emailTemplateRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  const topRef = useRef<HTMLDivElement>(null);
+  
+  // Effect to scroll to top when coming from floating button
+  useEffect(() => {
+    if (location.state && location.state.scrollToTop) {
+      topRef.current?.scrollIntoView({ behavior: "smooth" });
+      // Clean up location state to prevent re-scrolling on refreshes
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
   
   const copyEmailTemplate = () => {
     if (emailTemplateRef.current) {
@@ -37,6 +48,9 @@ const HowItWorks = () => {
       <Header />
       
       <main className="container max-w-[800px] mx-auto py-20 px-6 flex-grow">
+        {/* Invisible reference element for scroll to top */}
+        <div ref={topRef}></div>
+        
         {/* Intro Section */}
         <div className="text-center mb-16">
           <h1 className="text-4xl font-bold mb-4">How It Works</h1>
