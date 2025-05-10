@@ -1,6 +1,6 @@
 
-import React, { useRef } from "react";
-import { Link } from "react-router-dom";
+import React, { useRef, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import GhostGrid from "@/components/GhostGrid";
@@ -16,12 +16,22 @@ const Index = () => {
     isLoading
   } = useGhost();
   const searchSectionRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
   
   const scrollToSearch = () => {
     searchSectionRef.current?.scrollIntoView({
       behavior: "smooth"
     });
   };
+  
+  // Effect to handle scrolling when navigating from How It Works page
+  useEffect(() => {
+    if (location.state && location.state.scrollToReports) {
+      setTimeout(() => {
+        scrollToSearch();
+      }, 100); // Small delay to ensure DOM is ready
+    }
+  }, [location.state]);
   
   return (
     <div className="flex flex-col min-h-screen">

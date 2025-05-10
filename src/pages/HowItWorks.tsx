@@ -1,15 +1,17 @@
+
 import React, { useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Clipboard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+
 const HowItWorks = () => {
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const emailTemplateRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  
   const copyEmailTemplate = () => {
     if (emailTemplateRef.current) {
       const text = emailTemplateRef.current.textContent || '';
@@ -26,6 +28,11 @@ const HowItWorks = () => {
       });
     }
   };
+  
+  const goToReports = () => {
+    navigate('/', { state: { scrollToReports: true } });
+  };
+  
   return <div className="flex flex-col min-h-screen">
       <Header />
       
@@ -123,11 +130,14 @@ Best regards,
           
         </div>
         
-        {/* Call to Action - now it's just a link back to homepage */}
+        {/* Call to Action - now it scrolls to the reports section on the homepage */}
         <div className="mt-16 text-center">
-          <Link to="/">
-            <Button className="bg-black text-white hover:bg-gray-800 px-8 py-6 text-lg">Browse Reports</Button>
-          </Link>
+          <Button 
+            className="bg-black text-white hover:bg-gray-800 px-8 py-6 text-lg"
+            onClick={goToReports}
+          >
+            Browse Reports
+          </Button>
         </div>
       </main>
       
