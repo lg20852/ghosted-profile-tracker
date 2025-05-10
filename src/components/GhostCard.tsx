@@ -9,7 +9,6 @@ import { Calendar, AlertTriangle, Flame, Loader } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent } from "./ui/dialog";
 
 interface GhostCardProps {
   ghost: GhostProfile;
@@ -19,8 +18,6 @@ const GhostCard: React.FC<GhostCardProps> = ({
   ghost
 }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const handleStripeCheckout = async () => {
@@ -48,9 +45,32 @@ const GhostCard: React.FC<GhostCardProps> = ({
       console.log("Checkout session created:", data);
 
       if (data?.url) {
-        // Store the URL and open the dialog
-        setCheckoutUrl(data.url);
-        setDialogOpen(true);
+        // Open Stripe checkout in a new tab instead of redirecting
+        console.log("Opening URL in new tab:", data.url);
+        const newWindow = window.open(data.url, '_blank');
+        
+        // Handle popup blocking
+        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+          console.warn("Popup was blocked - showing instructions to user");
+          toast({
+            title: "Popup Blocked",
+            description: "Please allow popups for this site and try again, or copy the URL manually.",
+            variant: "destructive"
+          });
+          
+          // Provide alternative for users with popup blockers
+          navigator.clipboard.writeText(data.url)
+            .then(() => {
+              toast({
+                title: "Checkout URL Copied",
+                description: "The checkout URL has been copied to your clipboard. Please paste it in a new tab.",
+                duration: 6000,
+              });
+            })
+            .catch(err => {
+              console.error("Failed to copy URL:", err);
+            });
+        }
       } else {
         console.error("No checkout URL returned in the data");
         throw new Error('No checkout URL returned');
@@ -93,65 +113,47 @@ const GhostCard: React.FC<GhostCardProps> = ({
     maximumFractionDigits: 0
   }).format(settlementAmount);
   
-  return (
-    <>
-      <Card className="overflow-hidden hover:shadow-md transition-all hover:translate-y-[-3px] cursor-pointer">
-        <CardContent className="p-6 flex flex-col items-center text-center">
-          <Avatar className="h-24 w-24 mb-4">
-            <AvatarImage src={companyImageUrl} alt={displayName} />
-            <AvatarFallback>{initials}</AvatarFallback>
-          </Avatar>
-          
-          <h3 className="font-bold text-xl mb-2">{displayName}</h3>
-          
-          <div className="text-gray-600 mb-6 space-y-2 w-full">
-            <div className="flex items-center justify-center w-full">
-              {isFrequentOffender ? <Flame size={16} className={cn("flex-shrink-0 mr-2 animate-[wiggle_1s_ease-in-out_infinite]", isRepeatOffender ? "text-orange-500" : "text-amber-500")} /> : <AlertTriangle size={16} className="text-amber-500 flex-shrink-0 mr-2" />}
-              <span>Reported {ghost.spookCount} {ghost.spookCount === 1 ? "time" : "times"} for ghosting</span>
-            </div>
-            <div className="flex items-center justify-center w-full">
-              <Calendar size={14} className="flex-shrink-0 mr-2" />
-              <span>Last report: {format(ghost.lastSeen, 'yyyy-MM-dd')}</span>
-            </div>
+  return <Card className="overflow-hidden hover:shadow-md transition-all hover:translate-y-[-3px] cursor-pointer">
+      <CardContent className="p-6 flex flex-col items-center text-center">
+        <Avatar className="h-24 w-24 mb-4">
+          <AvatarImage src={companyImageUrl} alt={displayName} />
+          <AvatarFallback>{initials}</AvatarFallback>
+        </Avatar>
+        
+        <h3 className="font-bold text-xl mb-2">{displayName}</h3>
+        
+        <div className="text-gray-600 mb-6 space-y-2 w-full">
+          <div className="flex items-center justify-center w-full">
+            {isFrequentOffender ? <Flame size={16} className={cn("flex-shrink-0 mr-2 animate-[wiggle_1s_ease-in-out_infinite]", isRepeatOffender ? "text-orange-500" : "text-amber-500")} /> : <AlertTriangle size={16} className="text-amber-500 flex-shrink-0 mr-2" />}
+            <span>Reported {ghost.spookCount} {ghost.spookCount === 1 ? "time" : "times"} for ghosting</span>
           </div>
-          
-          <Button 
-            variant="outline" 
-            className="border-black hover:bg-black hover:text-white transition-all w-full" 
-            onClick={handleStripeCheckout}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <Loader className="mr-2 h-4 w-4 animate-spin" />
-                <span>Processing...</span>
-              </>
-            ) : (
-              `Settle Report – ${formattedSettlementAmount}`
-            )}
-          </Button>
-          <p className="text-xs mt-2 text-gray-500">$450 goes to candidate, $50 supports the platform</p>
-          
-          <a href="mailto:support@ghosted.app?subject=Report%20Abuse%20-%20Ghost%20Profile" className="text-xs mt-4 text-gray-400 hover:underline">
-            Report abuse
-          </a>
-        </CardContent>
-      </Card>
-
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[900px] h-[80vh] p-0 overflow-hidden bg-transparent border-none shadow-none">
-          {checkoutUrl && (
-            <iframe 
-              src={checkoutUrl} 
-              className="w-full h-full rounded-lg"
-              frameBorder="0"
-              allow="payment"
-            />
+          <div className="flex items-center justify-center w-full">
+            <Calendar size={14} className="flex-shrink-0 mr-2" />
+            <span>Last report: {format(ghost.lastSeen, 'yyyy-MM-dd')}</span>
+          </div>
+        </div>
+        
+        <Button 
+          variant="outline" 
+          className="border-black hover:bg-black hover:text-white transition-all w-full" 
+          onClick={handleStripeCheckout}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <Loader className="mr-2 h-4 w-4 animate-spin" />
+              <span>Processing...</span>
+            </>
+          ) : (
+            `Settle Report – ${formattedSettlementAmount}`
           )}
-        </DialogContent>
-      </Dialog>
-    </>
-  );
+        </Button>
+        <p className="text-xs mt-2 text-gray-500">$450 goes to candidate, $50 supports the platform</p>
+        
+        <a href="mailto:support@ghosted.app?subject=Report%20Abuse%20-%20Ghost%20Profile" className="text-xs mt-4 text-gray-400 hover:underline">
+          Report abuse
+        </a>
+      </CardContent>
+    </Card>;
 };
-
 export default GhostCard;
