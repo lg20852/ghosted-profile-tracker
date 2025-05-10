@@ -1,4 +1,3 @@
-
 import React, { useRef } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -6,32 +5,28 @@ import { Clipboard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-
 const HowItWorks = () => {
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const emailTemplateRef = useRef<HTMLDivElement>(null);
-
   const copyEmailTemplate = () => {
     if (emailTemplateRef.current) {
       const text = emailTemplateRef.current.textContent || '';
-      navigator.clipboard.writeText(text)
-        .then(() => {
-          toast({
-            title: "Email template copied",
-            description: "The follow-up email template has been copied to your clipboard."
-          });
-        })
-        .catch(err => {
-          toast({
-            title: "Failed to copy",
-            description: "Please try selecting and copying the text manually."
-          });
+      navigator.clipboard.writeText(text).then(() => {
+        toast({
+          title: "Email template copied",
+          description: "The follow-up email template has been copied to your clipboard."
         });
+      }).catch(err => {
+        toast({
+          title: "Failed to copy",
+          description: "Please try selecting and copying the text manually."
+        });
+      });
     }
   };
-
-  return (
-    <div className="flex flex-col min-h-screen">
+  return <div className="flex flex-col min-h-screen">
       <Header />
       
       <main className="container max-w-[800px] mx-auto py-20 px-6 flex-grow">
@@ -100,22 +95,14 @@ const HowItWorks = () => {
           <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 mt-8">
             <div className="flex justify-between items-start mb-4">
               <h2 className="text-xl font-semibold">Sample Follow-up Email</h2>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="flex items-center gap-2"
-                onClick={copyEmailTemplate}
-              >
+              <Button variant="outline" size="sm" className="flex items-center gap-2" onClick={copyEmailTemplate}>
                 <Clipboard size={16} />
                 Copy
               </Button>
             </div>
             
-            <div 
-              ref={emailTemplateRef}
-              className="bg-gray-50 p-5 rounded-md border border-gray-100 font-mono text-sm text-gray-700 whitespace-pre-line"
-            >
-{`Subject: Following up on [Position Name] application
+            <div ref={emailTemplateRef} className="bg-gray-50 p-5 rounded-md border border-gray-100 font-mono text-sm text-gray-700 whitespace-pre-line">
+            {`Subject: Following up on [Position Name] application
 
 Dear [Recruiter's Name],
 
@@ -139,16 +126,12 @@ Best regards,
         {/* Call to Action - now it's just a link back to homepage */}
         <div className="mt-16 text-center">
           <Link to="/">
-            <Button className="bg-black text-white hover:bg-gray-800 px-8 py-6 text-lg">
-              Return to Homepage
-            </Button>
+            <Button className="bg-black text-white hover:bg-gray-800 px-8 py-6 text-lg">Browse Reports</Button>
           </Link>
         </div>
       </main>
       
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default HowItWorks;
