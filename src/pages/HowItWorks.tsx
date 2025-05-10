@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -45,12 +44,12 @@ const HowItWorks = () => {
   };
   
   return <div className="flex flex-col min-h-screen">
+      {/* Invisible reference element for scroll to top - positioned before Header */}
+      <div ref={topRef} className="absolute top-0 left-0"></div>
+      
       <Header />
       
       <main className="container max-w-[800px] mx-auto py-20 px-6 flex-grow">
-        {/* Invisible reference element for scroll to top */}
-        <div ref={topRef}></div>
-        
         {/* Intro Section */}
         <div className="text-center mb-16">
           <h1 className="text-4xl font-bold mb-4">How It Works</h1>
