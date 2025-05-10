@@ -33,13 +33,17 @@ const Index = () => {
           <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">Search reports of ghosting by company. Share your experience. Each verified report qualifies for $500 employer-paid compensation.</p>
           
           <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/how-it-works">
-              <Button className="w-full sm:w-auto bg-black text-white hover:bg-gray-800 px-8 py-6 text-lg">
+            <Link to="/how-it-works" className="w-full sm:w-auto">
+              <Button className="w-full bg-black text-white hover:bg-gray-800 px-8 py-6 text-lg h-auto">
                 Report a Ghosting
               </Button>
             </Link>
             
-            <Button variant="outline" className="w-full sm:w-auto border-black hover:bg-black hover:text-white px-8 py-6 text-lg" onClick={scrollToSearch}>
+            <Button 
+              variant="outline" 
+              className="w-full sm:w-auto border-black hover:bg-black hover:text-white px-8 py-6 text-lg h-auto" 
+              onClick={scrollToSearch}
+            >
               Browse Reports
             </Button>
           </div>
