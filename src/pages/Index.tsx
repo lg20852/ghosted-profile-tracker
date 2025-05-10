@@ -35,7 +35,7 @@ const Index = () => {
           <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/how-it-works">
               <Button className="w-full sm:w-auto bg-black text-white hover:bg-gray-800 px-8 py-6 text-lg">
-                Verify a Ghosting
+                Report a Ghosting
               </Button>
             </Link>
             

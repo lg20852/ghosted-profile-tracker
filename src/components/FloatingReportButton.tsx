@@ -31,7 +31,7 @@ const FloatingReportButton = () => {
           className="bg-black text-white rounded-full shadow-lg px-6 py-5 hover:bg-gray-800"
           size="lg"
         >
-          Verify a Ghosting
+          Report a Ghosting
         </Button>
       </Link>
     </div>
