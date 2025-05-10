@@ -49,6 +49,15 @@ const GhostCard: React.FC<GhostCardProps> = ({ ghost }) => {
   const isFrequentOffender = ghost.spookCount >= 3;
   const isRepeatOffender = ghost.spookCount >= 5;
 
+  // Calculate settlement amount based on the number of reported ghostings
+  const settlementAmount = ghost.spookCount * 500;
+  const formattedSettlementAmount = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(settlementAmount);
+
   return (
     <Card className="overflow-hidden hover:shadow-md transition-all hover:translate-y-[-3px] cursor-pointer">
       <CardContent className="p-6 flex flex-col items-center text-center">
@@ -85,7 +94,7 @@ const GhostCard: React.FC<GhostCardProps> = ({ ghost }) => {
           className="border-black hover:bg-black hover:text-white transition-all w-full"
           onClick={handleVenmoPayment}
         >
-          Settle Report – $500 via Venmo
+          Settle Report – {formattedSettlementAmount}
         </Button>
         <p className="text-xs mt-2 text-gray-500">$450 goes to candidate, $50 supports the platform</p>
         
