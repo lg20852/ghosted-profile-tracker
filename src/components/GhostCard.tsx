@@ -26,6 +26,8 @@ const GhostCard: React.FC<GhostCardProps> = ({
       // Calculate settlement amount based on the number of reported ghostings
       const settlementAmount = ghost.spookCount * 500;
       
+      console.log("Creating checkout session for:", ghost.name, "Amount:", settlementAmount);
+      
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
           amount: settlementAmount,
@@ -36,13 +38,41 @@ const GhostCard: React.FC<GhostCardProps> = ({
       });
 
       if (error) {
+        console.error("Supabase function error:", error);
         throw new Error(error.message);
       }
 
+      console.log("Checkout session created:", data);
+
       if (data?.url) {
-        // Redirect to Stripe checkout
-        window.location.href = data.url;
+        // Open Stripe checkout in a new tab instead of redirecting
+        console.log("Opening URL in new tab:", data.url);
+        const newWindow = window.open(data.url, '_blank');
+        
+        // Handle popup blocking
+        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+          console.warn("Popup was blocked - showing instructions to user");
+          toast({
+            title: "Popup Blocked",
+            description: "Please allow popups for this site and try again, or copy the URL manually.",
+            variant: "destructive"
+          });
+          
+          // Provide alternative for users with popup blockers
+          navigator.clipboard.writeText(data.url)
+            .then(() => {
+              toast({
+                title: "Checkout URL Copied",
+                description: "The checkout URL has been copied to your clipboard. Please paste it in a new tab.",
+                duration: 6000,
+              });
+            })
+            .catch(err => {
+              console.error("Failed to copy URL:", err);
+            });
+        }
       } else {
+        console.error("No checkout URL returned in the data");
         throw new Error('No checkout URL returned');
       }
     } catch (error) {
@@ -53,6 +83,7 @@ const GhostCard: React.FC<GhostCardProps> = ({
         variant: "destructive"
       });
     } finally {
+      // Always reset loading state regardless of success or failure
       setIsLoading(false);
     }
   };
@@ -110,7 +141,7 @@ const GhostCard: React.FC<GhostCardProps> = ({
         >
           {isLoading ? (
             <>
-              <Loader className="animate-spin" />
+              <Loader className="mr-2 h-4 w-4 animate-spin" />
               <span>Processing...</span>
             </>
           ) : (
