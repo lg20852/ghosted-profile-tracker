@@ -64,7 +64,7 @@ const GhostCard: React.FC<GhostCardProps> = ({
         <Button variant="outline" className="border-black hover:bg-black hover:text-white transition-all w-full" onClick={handleVenmoPayment}>
           Settle Report – {formattedSettlementAmount}
         </Button>
-        <p className="text-xs mt-2 text-gray-500">$450 goes to each candidate, $50 supports the platform</p>
+        <p className="text-xs mt-2 text-gray-500">$450 goes to candidate, $50 supports the platform</p>
         
         <a href="mailto:support@ghosted.app?subject=Report%20Abuse%20-%20Ghost%20Profile" className="text-xs mt-4 text-gray-400 hover:underline">
           Report abuse
