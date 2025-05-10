@@ -36,6 +36,10 @@ export const useGhostFilter = (
               return ghost.company?.toLowerCase() === filter.value.toLowerCase();
             
             case 'location':
+              // Special handling for "Remote" location filter
+              if (filter.value === "Remote") {
+                return ghost.location?.toLowerCase() === "remote" || ghost.location === undefined;
+              }
               return ghost.location?.toLowerCase() === filter.value.toLowerCase();
             
             default:

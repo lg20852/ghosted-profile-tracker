@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Input } from "./ui/input";
 import { useGhost } from "@/contexts/ghost";
@@ -27,7 +26,7 @@ const timeFrames = [
 
 const locations = [
   "New York", "Los Angeles", "Chicago", "Houston", "Phoenix", 
-  "Philadelphia", "San Antonio", "San Diego", "Dallas", "Austin"
+  "Philadelphia", "San Antonio", "San Diego", "Dallas", "Austin", "Remote"
 ];
 
 const SearchBar = () => {
