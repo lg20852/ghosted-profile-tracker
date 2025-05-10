@@ -1,8 +1,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Button } from "./ui/button";
-import { Dialog, DialogTrigger } from "./ui/dialog";
-import ReportForm from "./ReportForm";
+import { Link } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const FloatingReportButton = () => {
@@ -27,17 +26,14 @@ const FloatingReportButton = () => {
 
   return (
     <div className="fixed bottom-6 right-6 z-50">
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button 
-            className="bg-black text-white rounded-full shadow-lg px-6 py-5 hover:bg-gray-800"
-            size="lg"
-          >
-            Report a Ghosting
-          </Button>
-        </DialogTrigger>
-        <ReportForm />
-      </Dialog>
+      <Link to="/how-it-works">
+        <Button 
+          className="bg-black text-white rounded-full shadow-lg px-6 py-5 hover:bg-gray-800"
+          size="lg"
+        >
+          Verify a Ghosting
+        </Button>
+      </Link>
     </div>
   );
 };

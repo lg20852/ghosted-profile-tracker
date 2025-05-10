@@ -1,12 +1,35 @@
 
-import React from "react";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import React, { useRef } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Clipboard } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import ReportForm from "@/components/ReportForm";
 
 const HowItWorks = () => {
+  const { toast } = useToast();
+  const emailTemplateRef = useRef<HTMLDivElement>(null);
+
+  const copyEmailTemplate = () => {
+    if (emailTemplateRef.current) {
+      const text = emailTemplateRef.current.textContent || '';
+      navigator.clipboard.writeText(text)
+        .then(() => {
+          toast({
+            title: "Email template copied",
+            description: "The follow-up email template has been copied to your clipboard."
+          });
+        })
+        .catch(err => {
+          toast({
+            title: "Failed to copy",
+            description: "Please try selecting and copying the text manually."
+          });
+        });
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
@@ -72,18 +95,54 @@ const HowItWorks = () => {
               </div>
             </div>
           </div>
+          
+          {/* Sample Follow-up Email Template */}
+          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 mt-8">
+            <div className="flex justify-between items-start mb-4">
+              <h2 className="text-xl font-semibold">Sample Follow-up Email</h2>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-2"
+                onClick={copyEmailTemplate}
+              >
+                <Clipboard size={16} />
+                Copy
+              </Button>
+            </div>
+            
+            <div 
+              ref={emailTemplateRef}
+              className="bg-gray-50 p-5 rounded-md border border-gray-100 font-mono text-sm text-gray-700 whitespace-pre-line"
+            >
+{`Subject: Following up on [Position Name] application
+
+Dear [Recruiter's Name],
+
+I hope this email finds you well. I'm writing to follow up on my application for the [Position Name] role at [Company Name] that I interviewed for on [Interview Date].
+
+I enjoyed our conversation about [specific topic discussed during the interview] and remain very interested in the opportunity to join [Company Name] and contribute to [mention a company goal or project discussed].
+
+I understand hiring processes can take time, but I'd appreciate any update you might be able to provide regarding the status of my application or the next steps in the process.
+
+Thank you for your time and consideration.
+
+Best regards,
+[Your Name]
+[Your Phone Number]
+[Your LinkedIn - optional]`}
+            </div>
+          </div>
+          
         </div>
         
-        {/* Call to Action */}
+        {/* Call to Action - now it's just a link back to homepage */}
         <div className="mt-16 text-center">
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button className="bg-black text-white hover:bg-gray-800 px-8 py-6 text-lg">
-                Report a Ghosting
-              </Button>
-            </DialogTrigger>
-            <ReportForm />
-          </Dialog>
+          <Link to="/">
+            <Button className="bg-black text-white hover:bg-gray-800 px-8 py-6 text-lg">
+              Return to Homepage
+            </Button>
+          </Link>
         </div>
       </main>
       
