@@ -5,7 +5,10 @@ import { Button } from "./ui/button";
 import { GhostProfile } from "@/types";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { Calendar, AlertTriangle } from "lucide-react";
+import { Calendar, AlertTriangle, Flame } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+import { Badge } from "./ui/badge";
+import { cn } from "@/lib/utils";
 
 interface GhostCardProps {
   ghost: GhostProfile;
@@ -44,8 +47,26 @@ const GhostCard: React.FC<GhostCardProps> = ({ ghost }) => {
   
   const companyImageUrl = `https://images.unsplash.com/${stockImageId}?auto=format&fit=crop&w=300&h=300&q=80`;
 
+  // Determine if this is a frequent or repeat offender
+  const isFrequentOffender = ghost.spookCount >= 3;
+  const isRepeatOffender = ghost.spookCount >= 5;
+  
+  // Get the appropriate offender label
+  const getOffenderLabel = () => {
+    if (isRepeatOffender) return "Repeat offender";
+    if (isFrequentOffender) return "Frequent offender";
+    return "";
+  };
+
+  // Determine card styling based on offender status
+  const cardClassName = cn(
+    "overflow-hidden hover:shadow-md transition-all hover:translate-y-[-3px] cursor-pointer",
+    isFrequentOffender && "border-amber-400",
+    isRepeatOffender && "border-orange-500"
+  );
+
   return (
-    <Card className="overflow-hidden hover:shadow-md transition-all hover:translate-y-[-3px] cursor-pointer">
+    <Card className={cardClassName}>
       <CardContent className="p-6 flex flex-col items-center text-center">
         <Avatar className="h-24 w-24 mb-4">
           <AvatarImage src={companyImageUrl} alt={displayName} />
@@ -54,10 +75,46 @@ const GhostCard: React.FC<GhostCardProps> = ({ ghost }) => {
         
         <h3 className="font-bold text-xl mb-2">{displayName}</h3>
         
+        {isFrequentOffender && (
+          <Badge 
+            className={cn(
+              "mb-3", 
+              isRepeatOffender ? "bg-orange-500" : "bg-amber-500"
+            )}
+          >
+            <Flame className="w-3 h-3 mr-1 animate-pulse" />
+            {getOffenderLabel()}
+          </Badge>
+        )}
+        
         <div className="text-gray-600 mb-6 space-y-2 w-full">
           <div className="flex items-center justify-center w-full">
-            <AlertTriangle size={16} className="text-amber-500 flex-shrink-0 mr-2" />
-            <span>Reported {ghost.spookCount} {ghost.spookCount === 1 ? "time" : "times"} for ghosting</span>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center">
+                    {isFrequentOffender ? (
+                      <Flame 
+                        size={16} 
+                        className={cn(
+                          "flex-shrink-0 mr-2 group-hover:animate-pulse",
+                          isRepeatOffender ? "text-orange-500" : "text-amber-500"
+                        )} 
+                      />
+                    ) : (
+                      <AlertTriangle size={16} className="text-amber-500 flex-shrink-0 mr-2" />
+                    )}
+                    <span>Reported {ghost.spookCount} {ghost.spookCount === 1 ? "time" : "times"} for ghosting</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {isFrequentOffender 
+                    ? "Reported multiple times — users flagged this company for repeated ghosting."
+                    : "This company has been reported for ghosting candidates."
+                  }
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           <div className="flex items-center justify-center w-full">
             <Calendar size={14} className="flex-shrink-0 mr-2" />
