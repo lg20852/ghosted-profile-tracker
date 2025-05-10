@@ -28,7 +28,7 @@ const FloatingReportButton = () => {
     <div className="fixed bottom-6 right-6 z-50">
       <Link to="/how-it-works">
         <Button 
-          className="bg-black text-white rounded-full shadow-lg px-6 py-5 hover:bg-gray-800"
+          className="bg-black text-white rounded-full shadow-lg px-6 py-3 hover:bg-gray-800 text-base font-medium"
           size="lg"
         >
           Report a Ghosting
