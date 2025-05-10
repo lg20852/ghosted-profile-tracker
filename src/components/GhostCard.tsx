@@ -1,20 +1,60 @@
-import React from "react";
+
+import React, { useState } from "react";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { GhostProfile } from "@/types";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { Calendar, AlertTriangle, Flame } from "lucide-react";
+import { Calendar, AlertTriangle, Flame, Loader } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+
 interface GhostCardProps {
   ghost: GhostProfile;
 }
+
 const GhostCard: React.FC<GhostCardProps> = ({
   ghost
 }) => {
-  const handleVenmoPayment = () => {
-    // In a real app, this would use the actual Venmo handle from env variables
-    window.open(`venmo://paycharge?txn=pay&recipients=@ghostedsupport&amount=500&note=Ghosting Settlement`, "_blank");
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handleStripeCheckout = async () => {
+    setIsLoading(true);
+    try {
+      // Calculate settlement amount based on the number of reported ghostings
+      const settlementAmount = ghost.spookCount * 500;
+      
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: {
+          amount: settlementAmount,
+          ghostName: ghost.name,
+          companyName: ghost.company,
+          spookCount: ghost.spookCount
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data?.url) {
+        // Redirect to Stripe checkout
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL returned');
+      }
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      toast({
+        title: "Checkout Error",
+        description: "Failed to initialize checkout. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Use company name as the main display
@@ -41,6 +81,7 @@ const GhostCard: React.FC<GhostCardProps> = ({
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
   }).format(settlementAmount);
+  
   return <Card className="overflow-hidden hover:shadow-md transition-all hover:translate-y-[-3px] cursor-pointer">
       <CardContent className="p-6 flex flex-col items-center text-center">
         <Avatar className="h-24 w-24 mb-4">
@@ -61,8 +102,20 @@ const GhostCard: React.FC<GhostCardProps> = ({
           </div>
         </div>
         
-        <Button variant="outline" className="border-black hover:bg-black hover:text-white transition-all w-full" onClick={handleVenmoPayment}>
-          Settle Report – {formattedSettlementAmount}
+        <Button 
+          variant="outline" 
+          className="border-black hover:bg-black hover:text-white transition-all w-full" 
+          onClick={handleStripeCheckout}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <Loader className="animate-spin" />
+              <span>Processing...</span>
+            </>
+          ) : (
+            `Settle Report – ${formattedSettlementAmount}`
+          )}
         </Button>
         <p className="text-xs mt-2 text-gray-500">$450 goes to candidate, $50 supports the platform</p>
         

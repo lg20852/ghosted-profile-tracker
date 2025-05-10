@@ -8,6 +8,8 @@ import { GhostProvider } from "./contexts/ghost";
 import Index from "./pages/Index";
 import HowItWorks from "./pages/HowItWorks";
 import NotFound from "./pages/NotFound";
+import CheckoutSuccess from "./pages/CheckoutSuccess";
+import CheckoutCanceled from "./pages/CheckoutCanceled";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +23,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
+            <Route path="/checkout-success" element={<CheckoutSuccess />} />
+            <Route path="/checkout-canceled" element={<CheckoutCanceled />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
