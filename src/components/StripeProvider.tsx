@@ -27,7 +27,10 @@ const getStripe = () => {
       console.error("Invalid Stripe publishable key format. Keys should start with 'pk_'");
     }
     
-    stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
+    stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY).catch(error => {
+      console.error("Error initializing Stripe:", error);
+      return null;
+    });
   }
   return stripePromise;
 };
