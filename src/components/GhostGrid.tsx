@@ -12,14 +12,24 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 const GhostGrid = () => {
   const { filteredGhosts, searchTerm, isFiltering, activeFilters, isLoading, error } = useGhost();
 
+  // Debug logging
+  console.log("GhostGrid rendering", {
+    ghostCount: filteredGhosts.length,
+    isLoading,
+    isFiltering,
+    hasError: !!error
+  });
+  
   // Sort by spook count (descending)
   const sortedGhosts = [...filteredGhosts].sort((a, b) => b.spookCount - a.spookCount);
   
   if (isLoading) {
+    console.log("Showing loading state");
     return <LoadingState />;
   }
   
   if (error) {
+    console.log("Showing error state:", error);
     return (
       <div className="text-center py-12">
         <Alert variant="destructive" className="mb-4">
@@ -47,10 +57,12 @@ const GhostGrid = () => {
   }
   
   if (isFiltering) {
+    console.log("Showing filtering state");
     return <LoadingState />;
   }
   
   if (sortedGhosts.length === 0) {
+    console.log("No ghosts found");
     return (
       <div className="text-center py-12">
         <h3 className="text-xl font-medium">
@@ -73,6 +85,7 @@ const GhostGrid = () => {
     );
   }
 
+  console.log("Rendering ghost cards:", sortedGhosts.length);
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-4">
       {sortedGhosts.map(ghost => (
