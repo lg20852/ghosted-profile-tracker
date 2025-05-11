@@ -21,4 +21,5 @@ export interface GhostContextType {
   isFiltering: boolean;
   isLoading: boolean;
   error: string | null;
+  refreshGhosts?: () => void; // Add the refreshGhosts property as optional
 }

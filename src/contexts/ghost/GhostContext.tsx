@@ -22,70 +22,79 @@ export function GhostProvider({ children }: { children: ReactNode }) {
   // Use the custom hook for filtering ghosts
   const { filteredGhosts, isFiltering } = useGhostFilter(ghostProfiles, searchTerm, activeFilters);
 
-  // Fetch reports from Supabase on mount and migrate data if needed
-  useEffect(() => {
-    async function initializeApp() {
-      setIsLoading(true);
+  // Function to fetch and initialize data
+  const fetchAndInitializeData = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // Initialize the database to ensure the table exists
       try {
-        // Initialize the database to ensure the table exists
-        try {
-          await initializeDatabase();
-          console.log("Database initialized successfully");
-        } catch (err) {
-          console.warn('Database initialization issues (continuing anyway):', err);
+        await initializeDatabase();
+        console.log("Database initialized successfully");
+      } catch (err) {
+        console.warn('Database initialization issues (continuing anyway):', err);
+      }
+      
+      // Force migration of all mock data to Supabase
+      try {
+        await migrateMockData(true); // Pass true to force migration of all data
+        console.log("Mock data migration completed");
+      } catch (err) {
+        console.warn('Data migration issues (continuing anyway):', err);
+        // If migration fails but we have retry attempts left, increment the retry counter
+        if (retryCount < 2) {
+          setRetryCount(prev => prev + 1);
+          return; // Exit early to trigger a retry
         }
+      }
+      
+      // Then fetch all reports from Supabase
+      try {
+        const supabaseReports = await fetchReports();
+        console.log(`Fetched ${supabaseReports.length} reports from Supabase`);
         
-        // Force migration of all mock data to Supabase
-        try {
-          await migrateMockData(true); // Pass true to force migration of all data
-          console.log("Mock data migration completed");
-        } catch (err) {
-          console.warn('Data migration issues (continuing anyway):', err);
-          // If migration fails but we have retry attempts left, increment the retry counter
-          if (retryCount < 2) {
-            setRetryCount(prev => prev + 1);
-            return; // Exit early to trigger a retry
-          }
-        }
-        
-        // Then fetch all reports from Supabase
-        try {
-          const supabaseReports = await fetchReports();
-          console.log(`Fetched ${supabaseReports.length} reports from Supabase`);
-          
-          if (supabaseReports.length === 0 && retryCount < 2) {
-            console.warn("No reports found, will retry");
-            setRetryCount(prev => prev + 1);
-            return; // Exit early to trigger a retry
-          } else if (supabaseReports.length === 0) {
-            setError("No reports found in the database. Please add a report to get started.");
-            setReports([]);
-            setGhostProfiles([]);
-          } else {
-            setReports(supabaseReports);
-            // Generate ghost profiles ONLY from Supabase reports
-            const profiles = generateGhostProfiles(supabaseReports);
-            setGhostProfiles(profiles);
-            setError(null);
-          }
-        } catch (err) {
-          console.error("Failed to fetch reports:", err);
-          setError("Failed to load reports from the database. Please try again later.");
+        if (supabaseReports.length === 0 && retryCount < 2) {
+          console.warn("No reports found, will retry");
+          setRetryCount(prev => prev + 1);
+          return; // Exit early to trigger a retry
+        } else if (supabaseReports.length === 0) {
+          setError("No reports found in the database. Please add a report to get started.");
           setReports([]);
           setGhostProfiles([]);
+        } else {
+          setReports(supabaseReports);
+          // Generate ghost profiles ONLY from Supabase reports
+          const profiles = generateGhostProfiles(supabaseReports);
+          setGhostProfiles(profiles);
+          setError(null);
         }
       } catch (err) {
-        console.error("Top level error in initializeApp:", err);
-        setError("Failed to initialize application. Please try again later.");
+        console.error("Failed to fetch reports:", err);
+        setError("Failed to load reports from the database. Please try again later.");
         setReports([]);
         setGhostProfiles([]);
-      } finally {
-        setIsLoading(false);
       }
+    } catch (err) {
+      console.error("Top level error in initializeApp:", err);
+      setError("Failed to initialize application. Please try again later.");
+      setReports([]);
+      setGhostProfiles([]);
+    } finally {
+      setIsLoading(false);
     }
-    
-    initializeApp();
+  };
+
+  // Fetch reports from Supabase on mount and migrate data if needed
+  useEffect(() => {
+    fetchAndInitializeData();
   }, [retryCount]); // Add retryCount as a dependency to trigger re-runs when it changes
+
+  // Function to manually refresh ghost data
+  const refreshGhosts = () => {
+    console.log("Manually refreshing ghost data");
+    fetchAndInitializeData();
+  };
 
   const addReport = async (report: Report) => {
     try {
@@ -145,7 +154,8 @@ export function GhostProvider({ children }: { children: ReactNode }) {
     setActiveFilters,
     isFiltering,
     isLoading,
-    error
+    error,
+    refreshGhosts // Add the refreshGhosts function to the context
   };
 
   return <GhostContext.Provider value={value}>{children}</GhostContext.Provider>;
