@@ -83,13 +83,14 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children 
     };
     
     // Set a timeout to detect if Stripe is taking too long to initialize
+    // Increased from 8 seconds to 12 seconds
     timeoutId = window.setTimeout(() => {
       if (!stripeInitialized && isMounted) {
-        console.warn("Stripe initialization timeout reached after 8 seconds");
+        console.warn("Stripe initialization timeout reached after 12 seconds");
         setTimeoutError(true);
         setLoading(false);
       }
-    }, 8000); // 8 seconds timeout
+    }, 12000); // 12 seconds timeout
 
     initializeStripe();
     
@@ -108,7 +109,8 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children 
     // Reset loading state when client secret changes to ensure elements are properly initialized
     if (clientSecret) {
       setLoading(true);
-      setTimeout(() => setLoading(false), 1000); // Give a brief moment for Elements to initialize with the new secret
+      // Increased delay from 1 second to 1.5 seconds
+      setTimeout(() => setLoading(false), 1500); // Give a brief moment for Elements to initialize with the new secret
     }
   }, [clientSecret]);
   

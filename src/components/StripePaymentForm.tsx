@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useStripe, useElements, PaymentElement } from "@stripe/react-stripe-js";
 import { Button } from "./ui/button";
@@ -31,6 +32,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
   const [elementLoading, setElementLoading] = useState(true);
   const [elementError, setElementError] = useState<string | null>(null);
   const [activeStep, setActiveStep] = useState<CheckoutStep>("details");
+  const [loadingTimeout, setLoadingTimeout] = useState<number | null>(null);
   const { toast } = useToast();
 
   // Calculate progress based on active step
@@ -58,19 +60,41 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
       setElementReady(false);
       setElementLoading(true);
       setElementError(null);
+      
+      // Clear any existing timeouts
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout);
+        setLoadingTimeout(null);
+      }
     } else if (activeStep === "payment") {
-      // Increase timeout to 15 seconds (from 10)
-      const timeoutId = setTimeout(() => {
+      // Clear any existing timeouts
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout);
+      }
+      
+      // Increase timeout to 20 seconds (from 15)
+      const timeoutId = window.setTimeout(() => {
         if (!elementReady && elementLoading) {
           console.warn("Payment element failed to load within timeout");
           setElementError("Payment form is taking too long to load. Please try again.");
           setElementLoading(false);
         }
-      }, 15000); // 15 seconds timeout
+      }, 20000); // 20 seconds timeout
       
-      return () => clearTimeout(timeoutId);
+      setLoadingTimeout(timeoutId);
+      
+      return () => {
+        if (loadingTimeout) clearTimeout(loadingTimeout);
+      };
     }
   }, [activeStep]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (loadingTimeout) clearTimeout(loadingTimeout);
+    };
+  }, [loadingTimeout]);
 
   const formattedAmount = new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -171,7 +195,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
     setActiveStep("payment");
   };
 
-  // Enhance retry function to force reload element state
+  // Enhanced retry function to force reload element state
   const handleRetry = () => {
     setErrorMessage(null);
     setPaymentStatus("idle");
@@ -183,6 +207,12 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
     // Force stripe element refresh
     setElementReady(false);
     setElementLoading(true);
+    
+    // Clear any existing timeouts
+    if (loadingTimeout) {
+      clearTimeout(loadingTimeout);
+      setLoadingTimeout(null);
+    }
     
     if (activeStep === "payment") {
       const paymentElement = elements?.getElement("payment");
@@ -200,6 +230,13 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
   // Handler for when PaymentElement is ready
   const handlePaymentElementReady = () => {
     console.log("PaymentElement is ready");
+    
+    // Clear loading timeout when element is ready
+    if (loadingTimeout) {
+      clearTimeout(loadingTimeout);
+      setLoadingTimeout(null);
+    }
+    
     setElementReady(true);
     setElementLoading(false);
     setElementError(null);
@@ -208,6 +245,12 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
   // Handler for PaymentElement errors - add more detailed logging
   const handlePaymentElementError = (event: { error: { message: string; } }) => {
     console.error("PaymentElement error:", event.error);
+    
+    // Clear loading timeout when element errors
+    if (loadingTimeout) {
+      clearTimeout(loadingTimeout);
+      setLoadingTimeout(null);
+    }
     
     // Add more detailed error message for API key issues
     if (event.error.message.includes("API key")) {
