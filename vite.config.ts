@@ -6,6 +6,7 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  base: '/',
   server: {
     host: "::",
     port: 8080,
@@ -26,9 +27,7 @@ export default defineConfig(({ mode }) => ({
   build: {
     commonjsOptions: {
       include: [/node_modules/],
-    },
-    rollupOptions: {
-      external: ['@stripe/react-stripe-js', '@stripe/stripe-js']
     }
+    // Removed the rollupOptions.external configuration that was causing the issue
   }
 }));
