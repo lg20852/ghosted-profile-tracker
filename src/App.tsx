@@ -10,27 +10,57 @@ import HowItWorks from "./pages/HowItWorks";
 import NotFound from "./pages/NotFound";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
 import CheckoutCanceled from "./pages/CheckoutCanceled";
+import ErrorBoundary from "./components/ErrorBoundary";
 
-const queryClient = new QueryClient();
+// Create a custom error handler for React Query
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 2,
+      // Use a suspense-friendly staleTime to avoid rapid refetches
+      staleTime: 60000,
+      // Don't throw errors to React - handle them internally
+      useErrorBoundary: false,
+      // Default error handler that logs but doesn't crash
+      onError: (error) => {
+        console.error("React Query error:", error);
+      },
+    },
+    mutations: {
+      // Don't throw errors to React - handle them internally
+      useErrorBoundary: false,
+      // Default error handler that logs but doesn't crash
+      onError: (error) => {
+        console.error("Mutation error:", error);
+      },
+    },
+  },
+});
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <GhostProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/how-it-works" element={<HowItWorks />} />
-            <Route path="/checkout-success" element={<CheckoutSuccess />} />
-            <Route path="/checkout-canceled" element={<CheckoutCanceled />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </GhostProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <GhostProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={
+                <ErrorBoundary>
+                  <Index />
+                </ErrorBoundary>
+              } />
+              <Route path="/how-it-works" element={<HowItWorks />} />
+              <Route path="/checkout-success" element={<CheckoutSuccess />} />
+              <Route path="/checkout-canceled" element={<CheckoutCanceled />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </GhostProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

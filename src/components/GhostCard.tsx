@@ -21,14 +21,32 @@ import StripeProvider from "./StripeProvider";
 import StripePaymentForm from "./StripePaymentForm";
 import { useNavigate } from "react-router-dom";
 import { Alert, AlertDescription } from "./ui/alert";
+import ErrorBoundary from "./ErrorBoundary";
 
 interface GhostCardProps {
   ghost: GhostProfile;
 }
 
-const GhostCard: React.FC<GhostCardProps> = ({
-  ghost
-}) => {
+// Custom error message component
+const PaymentErrorMessage = ({ error, onRetry }: { error: string | null, onRetry: () => void }) => (
+  <div className="text-center space-y-4 py-4">
+    <AlertTriangle className="h-10 w-10 text-red-500 mx-auto" />
+    <h3 className="font-medium">Payment Error</h3>
+    <p className="text-sm text-muted-foreground">{error || "Failed to initialize payment"}</p>
+    <Alert className="mt-4 border-amber-200 bg-amber-50 text-amber-900">
+      <AlertDescription className="text-sm">
+        This is a demo app. Make sure you have set up the correct Stripe secret key (starting with sk_) in the Supabase edge function secrets, and that it matches your publishable key's account.
+      </AlertDescription>
+    </Alert>
+    <div className="flex justify-center pt-4">
+      <Button onClick={onRetry}>
+        Try Again
+      </Button>
+    </div>
+  </div>
+);
+
+const GhostCard: React.FC<GhostCardProps> = ({ ghost }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -47,14 +65,25 @@ const GhostCard: React.FC<GhostCardProps> = ({
       
       console.log("Creating payment intent for:", ghost.name, "Amount:", settlementAmount);
       
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: {
-          amount: settlementAmount,
-          ghostName: ghost.name,
-          companyName: ghost.company,
-          spookCount: ghost.spookCount
-        }
-      });
+      const { data, error } = await Promise.race([
+        supabase.functions.invoke('create-checkout', {
+          body: {
+            amount: settlementAmount,
+            ghostName: ghost.name,
+            companyName: ghost.company,
+            spookCount: ghost.spookCount
+          }
+        }),
+        new Promise<{data: null, error: { message: string }}>((resolve) => {
+          // Add a timeout to prevent hanging if the API call takes too long
+          setTimeout(() => {
+            resolve({
+              data: null, 
+              error: { message: "Payment service took too long to respond. Please try again." }
+            });
+          }, 10000);
+        })
+      ]);
 
       if (error) {
         console.error("Supabase function error:", error);
@@ -74,12 +103,9 @@ const GhostCard: React.FC<GhostCardProps> = ({
           setPaymentError(error.message || "Failed to initialize payment");
         }
         
-        throw new Error(error.message || "Failed to initialize payment");
-      }
-
-      console.log("Payment intent created:", data);
-
-      if (data?.clientSecret) {
+        // Don't throw, just log the error
+        console.error("Payment initiation failed:", error.message);
+      } else if (data?.clientSecret) {
         // Store the client secret and open the dialog
         setClientSecret(data.clientSecret);
         setDialogOpen(true);
@@ -87,18 +113,20 @@ const GhostCard: React.FC<GhostCardProps> = ({
         // Check if there's an error message in the response
         if (data?.error) {
           setPaymentError(data.error);
-          throw new Error(data.error);
+          console.error("Payment error from response:", data.error);
         } else {
           console.error("No client secret returned in the data");
           setPaymentError("No client secret returned from payment service");
-          throw new Error('No client secret returned');
         }
       }
     } catch (error) {
-      console.error('Error creating payment intent:', error);
+      // This should only catch unexpected errors that weren't handled above
+      console.error('Unexpected error creating payment intent:', error);
+      setPaymentError(error.message || "An unexpected error occurred. Please try again.");
+      
       toast({
         title: "Payment Error",
-        description: error.message || "Failed to initialize payment. Please try again.",
+        description: "We encountered an unexpected issue. Please try again later.",
         variant: "destructive"
       });
     } finally {
@@ -156,7 +184,7 @@ const GhostCard: React.FC<GhostCardProps> = ({
   }).format(settlementAmount);
   
   return (
-    <>
+    <ErrorBoundary>
       <Card className="overflow-hidden hover:shadow-md transition-all hover:translate-y-[-3px] cursor-pointer">
         <CardContent className="p-6 flex flex-col items-center text-center">
           <Avatar className="h-24 w-24 mb-4">
@@ -214,36 +242,29 @@ const GhostCard: React.FC<GhostCardProps> = ({
           </DialogHeader>
           
           <div className="p-6 pt-2">
-            {paymentError ? (
-              <div className="text-center space-y-4 py-4">
-                <AlertTriangle className="h-10 w-10 text-red-500 mx-auto" />
-                <h3 className="font-medium">Payment Error</h3>
-                <p className="text-sm text-muted-foreground">{paymentError}</p>
-                <Alert className="mt-4 border-amber-200 bg-amber-50 text-amber-900">
-                  <AlertDescription className="text-sm">
-                    This is a demo app. Make sure you have set up the correct Stripe secret key (starting with sk_) in the Supabase edge function secrets, and that it matches your publishable key's account.
-                  </AlertDescription>
-                </Alert>
-                <div className="flex justify-center pt-4">
-                  <Button onClick={handleRetry}>
-                    Try Again
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <StripeProvider clientSecret={clientSecret}>
-                <StripePaymentForm 
-                  onSuccess={handlePaymentSuccess} 
-                  onCancel={handlePaymentCancel}
-                  amount={settlementAmount}
-                  ghostName={displayName}
-                />
-              </StripeProvider>
-            )}
+            <ErrorBoundary fallback={
+              <PaymentErrorMessage 
+                error="The payment component encountered an unexpected error." 
+                onRetry={handleRetry} 
+              />
+            }>
+              {paymentError ? (
+                <PaymentErrorMessage error={paymentError} onRetry={handleRetry} />
+              ) : (
+                <StripeProvider clientSecret={clientSecret}>
+                  <StripePaymentForm 
+                    onSuccess={handlePaymentSuccess} 
+                    onCancel={handlePaymentCancel}
+                    amount={settlementAmount}
+                    ghostName={displayName}
+                  />
+                </StripeProvider>
+              )}
+            </ErrorBoundary>
           </div>
         </DialogContent>
       </Dialog>
-    </>
+    </ErrorBoundary>
   );
 };
 
