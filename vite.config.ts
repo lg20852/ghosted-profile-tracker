@@ -29,6 +29,11 @@ export default defineConfig(({ mode }) => ({
     },
     rollupOptions: {
       external: [],
+      output: {
+        manualChunks: {
+          stripe: ['@stripe/react-stripe-js', '@stripe/stripe-js']
+        }
+      }
     }
   }
 }));
