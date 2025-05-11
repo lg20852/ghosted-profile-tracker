@@ -5,7 +5,7 @@ import { Button } from "./ui/button";
 import { GhostProfile } from "@/types";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { Calendar, AlertTriangle, Flame, Loader, ExternalLink } from "lucide-react";
+import { Calendar, AlertTriangle, Flame, Loader } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +16,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import StripeProvider from "./StripeProvider";
+import StripePaymentForm from "./StripePaymentForm";
+import { useNavigate } from "react-router-dom";
 
 interface GhostCardProps {
   ghost: GhostProfile;
@@ -26,16 +29,17 @@ const GhostCard: React.FC<GhostCardProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const handleStripeCheckout = async () => {
+  const handlePaymentInitiation = async () => {
     setIsLoading(true);
     try {
       // Calculate settlement amount based on the number of reported ghostings
       const settlementAmount = ghost.spookCount * 500;
       
-      console.log("Creating checkout session for:", ghost.name, "Amount:", settlementAmount);
+      console.log("Creating payment intent for:", ghost.name, "Amount:", settlementAmount);
       
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
@@ -51,21 +55,21 @@ const GhostCard: React.FC<GhostCardProps> = ({
         throw new Error(error.message);
       }
 
-      console.log("Checkout session created:", data);
+      console.log("Payment intent created:", data);
 
-      if (data?.url) {
-        // Store the URL and open the dialog
-        setCheckoutUrl(data.url);
+      if (data?.clientSecret) {
+        // Store the client secret and open the dialog
+        setClientSecret(data.clientSecret);
         setDialogOpen(true);
       } else {
-        console.error("No checkout URL returned in the data");
-        throw new Error('No checkout URL returned');
+        console.error("No client secret returned in the data");
+        throw new Error('No client secret returned');
       }
     } catch (error) {
-      console.error('Error creating checkout session:', error);
+      console.error('Error creating payment intent:', error);
       toast({
-        title: "Checkout Error",
-        description: "Failed to initialize checkout. Please try again.",
+        title: "Payment Error",
+        description: "Failed to initialize payment. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -76,37 +80,19 @@ const GhostCard: React.FC<GhostCardProps> = ({
 
   const handleDialogClose = () => {
     setDialogOpen(false);
-    // Optional: Clear the URL when dialog is closed
+    // Optional: Clear client secret when dialog is closed
     setTimeout(() => {
-      setCheckoutUrl(null);
+      setClientSecret(null);
     }, 300); // Small delay to allow dialog close animation to complete
   };
 
-  const openExternalCheckout = () => {
-    if (checkoutUrl) {
-      // Open in current tab - this is less likely to be blocked
-      window.location.href = checkoutUrl;
-    }
+  const handlePaymentSuccess = () => {
+    setDialogOpen(false);
+    navigate("/checkout-success");
   };
 
-  const copyCheckoutLink = () => {
-    if (checkoutUrl) {
-      navigator.clipboard.writeText(checkoutUrl)
-        .then(() => {
-          toast({
-            title: "Link Copied",
-            description: "Checkout link copied to clipboard"
-          });
-        })
-        .catch(err => {
-          console.error("Failed to copy URL:", err);
-          toast({
-            title: "Copy Failed",
-            description: "Please try opening the link directly",
-            variant: "destructive"
-          });
-        });
-    }
+  const handlePaymentCancel = () => {
+    setDialogOpen(false);
   };
 
   // Use company name as the main display
@@ -159,7 +145,7 @@ const GhostCard: React.FC<GhostCardProps> = ({
           <Button 
             variant="outline" 
             className="border-black hover:bg-black hover:text-white transition-all w-full" 
-            onClick={handleStripeCheckout}
+            onClick={handlePaymentInitiation}
             disabled={isLoading}
           >
             {isLoading ? (
@@ -179,53 +165,25 @@ const GhostCard: React.FC<GhostCardProps> = ({
         </CardContent>
       </Card>
       
-      {/* Checkout Dialog */}
+      {/* Payment Dialog */}
       <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
-        <DialogContent className="sm:max-w-[720px] max-h-[90vh] p-0 overflow-hidden">
-          <DialogHeader className="p-6 pb-2">
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
             <DialogTitle>Checkout - {displayName}</DialogTitle>
             <DialogDescription>
               Settlement payment for ghosting report
             </DialogDescription>
           </DialogHeader>
           
-          <div className="relative flex flex-col h-[70vh]">
-            {checkoutUrl ? (
-              <iframe 
-                src={checkoutUrl}
-                className="w-full h-full border-0"
-                title="Stripe Checkout"
+          <div className="mt-4">
+            <StripeProvider clientSecret={clientSecret}>
+              <StripePaymentForm 
+                onSuccess={handlePaymentSuccess} 
+                onCancel={handlePaymentCancel}
+                amount={settlementAmount}
+                ghostName={displayName}
               />
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <Loader className="w-8 h-8 animate-spin" />
-              </div>
-            )}
-            
-            {/* Fallback options if iframe doesn't work */}
-            <div className="p-4 border-t bg-gray-50">
-              <p className="text-sm text-gray-500 mb-3">
-                If the checkout isn't loading properly:
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={openExternalCheckout}
-                  className="flex items-center"
-                >
-                  <ExternalLink className="mr-1 h-4 w-4" />
-                  Open in new window
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={copyCheckoutLink}
-                >
-                  Copy checkout link
-                </Button>
-              </div>
-            </div>
+            </StripeProvider>
           </div>
         </DialogContent>
       </Dialog>

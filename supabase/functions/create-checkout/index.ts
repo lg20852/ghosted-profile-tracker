@@ -31,36 +31,32 @@ const handler = async (req: Request) => {
 
     const displayName = companyName || ghostName;
     
-    // Create checkout session
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: `Ghosting Settlement - ${displayName}`,
-              description: `Settlement payment for ${spookCount} ghosting incident${spookCount !== 1 ? 's' : ''}`,
-            },
-            unit_amount: amount * 100, // Convert dollar amount to cents
-          },
-          quantity: 1,
-        },
-      ],
-      mode: "payment",
-      success_url: `${req.headers.get("origin")}/checkout-success`,
-      cancel_url: `${req.headers.get("origin")}/checkout-canceled`,
+    // Create Payment Intent
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amount * 100, // Convert dollar amount to cents
+      currency: "usd",
+      metadata: {
+        ghostName,
+        companyName,
+        spookCount: String(spookCount),
+      },
+      automatic_payment_methods: {
+        enabled: true,
+      },
+      description: `Settlement payment for ${spookCount} ghosting incident${spookCount !== 1 ? 's' : ''} - ${displayName}`
     });
 
-    return new Response(JSON.stringify({ url: session.url }), {
+    return new Response(JSON.stringify({ 
+      clientSecret: paymentIntent.client_secret 
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
-    console.error("Error creating checkout session:", error);
+    console.error("Error creating payment intent:", error);
     return new Response(
       JSON.stringify({
-        error: error.message || "Failed to create checkout session",
+        error: error.message || "Failed to create payment intent",
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
