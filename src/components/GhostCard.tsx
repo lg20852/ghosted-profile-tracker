@@ -65,6 +65,7 @@ const GhostCard: React.FC<GhostCardProps> = ({ ghost }) => {
       
       console.log("Creating payment intent for:", ghost.name, "Amount:", settlementAmount);
       
+      // Improved error handling with more detailed logging
       const { data, error } = await Promise.race([
         supabase.functions.invoke('create-checkout', {
           body: {
@@ -72,6 +73,10 @@ const GhostCard: React.FC<GhostCardProps> = ({ ghost }) => {
             ghostName: ghost.name,
             companyName: ghost.company,
             spookCount: ghost.spookCount
+          },
+          // Add additional headers for authorization
+          headers: {
+            Authorization: `Bearer ${supabase.auth.session()?.access_token || ''}`
           }
         }),
         new Promise<{data: null, error: { message: string }}>((resolve) => {
@@ -89,7 +94,15 @@ const GhostCard: React.FC<GhostCardProps> = ({ ghost }) => {
         console.error("Supabase function error:", error);
         
         // More detailed error handling for common issues
-        if (error.message?.includes("non-2xx status code")) {
+        if (error.message?.includes("401") || error.message?.includes("unauthorized")) {
+          setPaymentError("Authentication error: Please check that you're properly logged in, or try refreshing the page.");
+          
+          toast({
+            title: "Authentication Error",
+            description: "There was a problem authenticating your request. Please try refreshing the page.",
+            variant: "destructive"
+          });
+        } else if (error.message?.includes("non-2xx status code")) {
           // Specific error for Stripe secret key issues
           setPaymentError("Payment service returned an error. Make sure your Stripe secret key (starts with sk_) is correctly configured in Supabase secrets.");
           

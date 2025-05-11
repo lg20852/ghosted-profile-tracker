@@ -20,6 +20,20 @@ const handler = async (req: Request) => {
     });
   }
 
+  // Validate that this is a POST request
+  if (req.method !== "POST") {
+    logStep("ERROR: Invalid method", { method: req.method });
+    return new Response(
+      JSON.stringify({
+        error: "Method not allowed. Please use POST.",
+      }),
+      {
+        status: 405,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
+  }
+
   try {
     // IMPORTANT: This should be the secret key, not the publishable key
     const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
