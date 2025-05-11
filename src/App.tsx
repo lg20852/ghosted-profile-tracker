@@ -21,16 +21,19 @@ const queryClient = new QueryClient({
       staleTime: 60000,
     },
   },
-  queryCache: {
-    onError: (error) => {
-      console.error("React Query error:", error);
-    },
-  },
-  mutationCache: {
-    onError: (error) => {
-      console.error("Mutation error:", error);
-    },
-  },
+});
+
+// Set up global error handlers using event listeners
+queryClient.getQueryCache().subscribe({
+  onError: (error) => {
+    console.error("React Query error:", error);
+  }
+});
+
+queryClient.getMutationCache().subscribe({
+  onError: (error) => {
+    console.error("Mutation error:", error);
+  }
 });
 
 const App = () => (
