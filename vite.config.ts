@@ -22,5 +22,10 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     include: ['@stripe/react-stripe-js', '@stripe/stripe-js']
+  },
+  build: {
+    commonjsOptions: {
+      include: [/node_modules/],
+    }
   }
 }));
