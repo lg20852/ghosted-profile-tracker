@@ -26,7 +26,7 @@ const queryClient = new QueryClient({
 // Set up global error handlers using event listeners
 queryClient.getQueryCache().subscribe((event) => {
   if (event.type === "observerResultsUpdated") {
-    const error = event.query.getObservers().find(o => o.getCurrentResult().error)?.getCurrentResult().error;
+    const error = event.query.state.error;
     if (error) {
       console.error("React Query error:", error);
     }
