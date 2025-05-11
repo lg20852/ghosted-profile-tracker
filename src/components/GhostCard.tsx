@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
@@ -65,10 +64,6 @@ const GhostCard: React.FC<GhostCardProps> = ({ ghost }) => {
       
       console.log("Creating payment intent for:", ghost.name, "Amount:", settlementAmount);
       
-      // Get the current session
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData?.session?.access_token || '';
-      
       // Improved error handling with more detailed logging
       const { data, error } = await Promise.race([
         supabase.functions.invoke('create-checkout', {
@@ -77,10 +72,6 @@ const GhostCard: React.FC<GhostCardProps> = ({ ghost }) => {
             ghostName: ghost.name,
             companyName: ghost.company,
             spookCount: ghost.spookCount
-          },
-          // Add additional headers for authorization
-          headers: {
-            Authorization: `Bearer ${accessToken}`
           }
         }),
         new Promise<{data: null, error: { message: string }}>((resolve) => {
