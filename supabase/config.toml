@@ -2,4 +2,4 @@
 project_id = "zaktygshxiqitamkkvzx"
 
 [functions.create-checkout]
-verify_jwt = true
+verify_jwt = false

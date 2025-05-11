@@ -4,6 +4,14 @@ import { corsHeaders } from "../_shared/cors.ts";
 import Stripe from "https://esm.sh/stripe@13.11.0";
 
 const handler = async (req: Request) => {
+  // Helper function for consistent logging
+  const logStep = (step: string, details?: any) => {
+    const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+    console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
+  };
+
+  logStep("Function started");
+
   // Handle CORS preflight request
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -15,11 +23,11 @@ const handler = async (req: Request) => {
   try {
     const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
     if (!STRIPE_SECRET_KEY) {
-      console.error("STRIPE_SECRET_KEY is not set in environment variables");
+      logStep("ERROR: STRIPE_SECRET_KEY is not set");
       throw new Error("Payment service is not properly configured. Please contact support.");
     }
 
-    console.log("Initializing Stripe with secret key");
+    logStep("Initializing Stripe with secret key");
     let stripe;
     
     try {
@@ -27,20 +35,29 @@ const handler = async (req: Request) => {
         apiVersion: "2023-10-16",
       });
     } catch (stripeInitError) {
-      console.error("Failed to initialize Stripe:", stripeInitError);
-      throw new Error("Payment service initialization failed. Please contact support.");
+      logStep("Failed to initialize Stripe", stripeInitError);
+      throw new Error(`Payment service initialization failed: ${stripeInitError.message}`);
     }
 
     // Parse request body
-    const { amount, ghostName, companyName, spookCount } = await req.json();
+    const requestData = await req.json();
+    logStep("Request data received", { 
+      amount: requestData.amount,
+      ghostName: requestData.ghostName,
+      companyName: requestData.companyName,
+      spookCount: requestData.spookCount
+    });
+    
+    const { amount, ghostName, companyName, spookCount } = requestData;
     
     if (!amount || amount <= 0) {
+      logStep("Invalid amount provided", { amount });
       throw new Error("Invalid amount");
     }
 
     const displayName = companyName || ghostName;
     
-    console.log(`Creating payment intent for ${displayName} with amount ${amount}`);
+    logStep(`Creating payment intent for ${displayName} with amount ${amount}`);
     
     // Create Payment Intent
     let paymentIntent;
@@ -58,17 +75,22 @@ const handler = async (req: Request) => {
         },
         description: `Settlement payment for ${spookCount} ghosting incident${spookCount !== 1 ? 's' : ''} - ${displayName}`
       });
+      
+      logStep("Payment intent created successfully", { 
+        id: paymentIntent.id, 
+        clientSecret: paymentIntent.client_secret?.slice(0, 10) + '...' 
+      });
     } catch (paymentIntentError) {
-      console.error("Failed to create payment intent:", paymentIntentError);
+      logStep("Failed to create payment intent", paymentIntentError);
+      
       // Return a more specific error based on the Stripe error
-      if (paymentIntentError.type === "StripeAuthenticationError") {
+      if (paymentIntentError.type === "StripeAuthenticationError" || 
+          paymentIntentError.message?.includes("Invalid API Key")) {
         throw new Error("Payment service authentication failed. Please contact support.");
       } else {
         throw new Error(`Payment initialization failed: ${paymentIntentError.message}`);
       }
     }
-
-    console.log("Payment intent created successfully");
     
     return new Response(JSON.stringify({ 
       clientSecret: paymentIntent.client_secret 
@@ -77,7 +99,7 @@ const handler = async (req: Request) => {
       status: 200,
     });
   } catch (error) {
-    console.error("Error creating payment intent:", error);
+    logStep("Error creating payment intent", { message: error.message, stack: error.stack });
     return new Response(
       JSON.stringify({
         error: error.message || "Failed to create payment intent",
