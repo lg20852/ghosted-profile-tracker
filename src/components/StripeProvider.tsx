@@ -65,7 +65,8 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children 
   const [stripeInitialized, setStripeInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [timeoutError, setTimeoutError] = useState(false);
-  const [stripe, setStripe] = useState<Stripe | null>(null);
+  // Store the stripe promise instead of the resolved instance
+  const [stripeInstance, setStripeInstance] = useState<Promise<Stripe | null> | null>(null);
   const { toast } = useToast();
   
   const initializeStripe = async (forceRefresh = false) => {
@@ -75,14 +76,19 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children 
     
     try {
       console.log("Starting Stripe initialization" + (forceRefresh ? " (forced refresh)" : ""));
-      const stripeInstance = await getStripe(forceRefresh);
       
-      if (!stripeInstance) {
+      // Create a new promise that will resolve to the Stripe instance
+      const newStripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
+      setStripeInstance(newStripePromise);
+      
+      // Still resolve the promise to check for errors, but don't store the result
+      const stripe = await newStripePromise;
+      
+      if (!stripe) {
         throw new Error("Failed to initialize Stripe");
       }
       
       console.log("Stripe initialized successfully");
-      setStripe(stripeInstance);
       setStripeInitialized(true);
       setTimeoutError(false);
       setError(null);
@@ -212,9 +218,10 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children 
 
   console.log("Rendering Stripe Elements with client secret");
 
+  // Pass the stripePromise directly instead of the resolved Stripe instance
   return (
     <Elements
-      stripe={stripe}
+      stripe={stripeInstance}
       options={{
         clientSecret,
         appearance: {
