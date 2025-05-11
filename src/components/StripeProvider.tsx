@@ -4,7 +4,6 @@ import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import type { Stripe } from "@stripe/stripe-js";
 import { Loader, AlertCircle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 
 // Using a TEST publishable key - IMPORTANT: This must be a TEST key
 const STRIPE_PUBLISHABLE_KEY = "pk_test_51M1LMF3P4O5RlqN46u13eTMIWRr6FfSnofNSN8eWJ4WT80pDcGehWrRdvTJdY6yzyPQuGftxR1OSXDUchNHyXVOH00hDmLycZZ";
@@ -30,7 +29,6 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children 
   const [stripeInitialized, setStripeInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [timeoutError, setTimeoutError] = useState(false);
-  const { toast } = useToast();
   
   useEffect(() => {
     console.log("StripeProvider mounting, client secret:", clientSecret ? "Present" : "Not present");
@@ -54,21 +52,12 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children 
         console.log("Stripe initialized successfully");
         setStripeInitialized(true);
         setTimeoutError(false);
-        toast({
-          title: "Payment system ready",
-          description: "You can now proceed with your payment",
-          variant: "default",
-        });
+        // Removed toast notification here to prevent unnecessary UI elements
       } catch (error) {
         console.error("Failed to initialize Stripe:", error);
         if (!isMounted) return;
         
         setError("Failed to initialize payment system. Please try again later.");
-        toast({
-          title: "Payment Error",
-          description: "Could not initialize the payment system",
-          variant: "destructive",
-        });
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -82,11 +71,6 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children 
         console.warn("Stripe initialization timeout reached after 8 seconds");
         setTimeoutError(true);
         setLoading(false);
-        toast({
-          title: "Payment System Timeout",
-          description: "The payment system is taking too long to respond",
-          variant: "destructive",
-        });
       }
     }, 8000); // 8 seconds timeout
 
@@ -98,14 +82,11 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children 
       clearTimeout(timeoutId);
       console.log("StripeProvider unmounting, cleaning up");
     };
-  }, [stripeInitialized, toast]);
+  }, [stripeInitialized]);
 
   // Log when client secret changes
   useEffect(() => {
     console.log("Client secret changed:", clientSecret ? "Present" : "Not present");
-    if (!clientSecret) {
-      console.warn("No client secret provided to StripeProvider");
-    }
   }, [clientSecret]);
   
   if (error || timeoutError) {

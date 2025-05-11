@@ -28,7 +28,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isElementsReady, setIsElementsReady] = useState(false);
+  const [elementReady, setElementReady] = useState(false);
   const [elementLoading, setElementLoading] = useState(true);
   const [activeStep, setActiveStep] = useState<CheckoutStep>("details");
   const { toast } = useToast();
@@ -39,45 +39,27 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
     activeStep === "payment" ? 66 :
     100;
 
+  // Check if both Stripe and Elements are ready
+  const isPaymentSystemReady = !!stripe && !!elements && elementReady;
+
   useEffect(() => {
-    // Check if elements are ready
-    const checkElementsReady = () => {
-      if (!elements) {
-        console.log("Elements not available yet");
-        return;
-      }
-      
-      const paymentElement = elements.getElement("payment");
-      if (paymentElement) {
-        console.log("Payment element is available");
-        setIsElementsReady(true);
-        setElementLoading(false);
-      } else {
-        console.log("Payment element not ready yet");
-      }
-    };
+    // Reset element ready state when moving between steps
+    if (activeStep === "details") {
+      setElementReady(false);
+      setElementLoading(true);
+    }
+  }, [activeStep]);
 
-    // Check initially
-    checkElementsReady();
-    
-    // Add a ready event listener
-    const readyCheck = setInterval(checkElementsReady, 1000);
-    
-    // Timeout after 10 seconds
-    const timeout = setTimeout(() => {
-      if (!isElementsReady) {
-        console.log("Elements initialization timed out");
-        setElementLoading(false);
-        setErrorMessage("Payment form initialization timed out. Please try again.");
-      }
-      clearInterval(readyCheck);
-    }, 10000);
-
-    return () => {
-      clearInterval(readyCheck);
-      clearTimeout(timeout);
-    };
-  }, [elements, isElementsReady]);
+  useEffect(() => {
+    // Log current ready state for debugging
+    console.log("Payment readiness state:", {
+      stripeReady: !!stripe,
+      elementsReady: !!elements,
+      elementReady,
+      elementLoading,
+      activeStep
+    });
+  }, [stripe, elements, elementReady, elementLoading, activeStep]);
 
   const formattedAmount = new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -88,9 +70,8 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
     e.preventDefault();
     console.log("Payment submission started");
 
-    if (!stripe || !elements || !isElementsReady) {
-      // Don't allow submission until stripe and elements are fully loaded
-      const errorMsg = "Payment processing is still initializing. Please wait a moment.";
+    if (!isPaymentSystemReady) {
+      const errorMsg = "Payment system is not fully initialized yet. Please try again.";
       console.error(errorMsg);
       setErrorMessage(errorMsg);
       return;
@@ -100,6 +81,11 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
     setErrorMessage(null);
 
     try {
+      console.log("Confirming all payment elements are ready");
+      if (!stripe || !elements) {
+        throw new Error("Stripe or Elements is not initialized");
+      }
+
       console.log("Submitting payment elements");
       const { error: submitError } = await elements.submit();
       if (submitError) {
@@ -170,16 +156,18 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
   };
 
   const handleProceedToPayment = () => {
-    if (!elements || !isElementsReady) {
-      setErrorMessage("Payment form is still loading. Please wait a moment.");
-      return;
-    }
+    console.log("Proceeding to payment step");
     setActiveStep("payment");
   };
 
   const handleRetry = () => {
     setErrorMessage(null);
     setPaymentStatus("idle");
+    
+    // Reset element state when retrying
+    setElementReady(false);
+    setElementLoading(true);
+    
     if (activeStep === "payment") {
       // Reset payment element
       const paymentElement = elements?.getElement("payment");
@@ -191,6 +179,13 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
         }
       }
     }
+  };
+
+  // Handler for when PaymentElement is ready
+  const handlePaymentElementReady = () => {
+    console.log("PaymentElement is ready");
+    setElementReady(true);
+    setElementLoading(false);
   };
 
   return (
@@ -242,21 +237,9 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
               <Button type="button" variant="outline" onClick={onCancel}>
                 Cancel
               </Button>
-              <Button 
-                onClick={handleProceedToPayment}
-                disabled={!isElementsReady}
-              >
-                {isElementsReady ? (
-                  <>
-                    Continue to Payment
-                    <CreditCard className="ml-2 h-4 w-4" />
-                  </>
-                ) : (
-                  <>
-                    <Loader className="mr-2 h-4 w-4 animate-spin" />
-                    Loading...
-                  </>
-                )}
+              <Button onClick={handleProceedToPayment}>
+                Continue to Payment
+                <CreditCard className="ml-2 h-4 w-4" />
               </Button>
             </div>
           </CardContent>
@@ -275,26 +258,19 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
                 </div>
                 
                 <div className="bg-muted/30 p-5 rounded-md border">
-                  {elementLoading ? (
+                  {elementLoading && (
                     <div className="flex justify-center items-center py-8">
                       <Loader className="mr-2 h-5 w-5 animate-spin" />
                       <span className="text-sm text-muted-foreground">Loading payment form...</span>
                     </div>
-                  ) : (
-                    <PaymentElement 
-                      options={{
-                        layout: { type: 'tabs', defaultCollapsed: false },
-                      }}
-                      onReady={() => {
-                        console.log("PaymentElement ready event fired");
-                        setElementLoading(false);
-                        setIsElementsReady(true);
-                      }}
-                      onLoaderStart={() => {
-                        console.log("PaymentElement loader started");
-                      }}
-                    />
                   )}
+                  <PaymentElement 
+                    options={{
+                      layout: { type: 'tabs', defaultCollapsed: false },
+                    }}
+                    onReady={handlePaymentElementReady}
+                    className={elementLoading ? "opacity-0 h-0" : ""}
+                  />
                 </div>
                 
                 {errorMessage && (
@@ -331,7 +307,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
                 ) : (
                   <Button
                     type="submit"
-                    disabled={!stripe || !elements || isProcessing || !isElementsReady || elementLoading || paymentStatus === "success"}
+                    disabled={!isPaymentSystemReady || isProcessing || paymentStatus === "success"}
                     className="relative min-w-[120px]"
                   >
                     {isProcessing ? (
