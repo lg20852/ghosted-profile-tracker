@@ -1,7 +1,7 @@
 
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import GhostCard from "../components/GhostCard";
+import GhostCard from "../src/components/GhostCard";
 import { BrowserRouter } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -21,6 +21,8 @@ const mockGhost = {
   spookCount: 3,
   lastSeen: new Date(),
   status: "active",
+  photoURL: null,
+  victimVenmos: []
 };
 
 describe("GhostCard with Stripe errors", () => {

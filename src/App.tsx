@@ -19,16 +19,12 @@ const queryClient = new QueryClient({
       retry: 2,
       // Use a suspense-friendly staleTime to avoid rapid refetches
       staleTime: 60000,
-      // Don't throw errors to React - handle them internally
-      useErrorBoundary: false,
       // Default error handler that logs but doesn't crash
       onError: (error) => {
         console.error("React Query error:", error);
       },
     },
     mutations: {
-      // Don't throw errors to React - handle them internally
-      useErrorBoundary: false,
       // Default error handler that logs but doesn't crash
       onError: (error) => {
         console.error("Mutation error:", error);
