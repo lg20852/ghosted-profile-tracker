@@ -5,8 +5,8 @@ import { loadStripe } from "@stripe/stripe-js";
 import type { Stripe } from "@stripe/stripe-js";
 import { Loader } from "lucide-react";
 
-// Using the live publishable key
-const STRIPE_PUBLISHABLE_KEY = "pk_live_51RN3k4Al4XSYcvLdnHh8glThz1Dr2A25On1lFDlJ8iYSg9B2ITGhGu4XcFEiDSoPJS8q72N82Sh1c5wJknXxtiRE00YfUlkcnI";
+// Using the test publishable key
+const STRIPE_PUBLISHABLE_KEY = "pk_test_51RN3k4Al4XSYcvLdnHh8glThzxaBUMvO0WhQvyzqPGKLhYBkQ2NwJwlMPJCCadBs5pEgj0PqJm9Gh4hbNHLYUM6500JCk0ToNe";
 
 // Initialize Stripe outside component to prevent multiple instances
 let stripePromise: Promise<Stripe | null>;
@@ -27,15 +27,20 @@ const getStripe = () => {
 const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children }) => {
   const [loading, setLoading] = useState(true);
   const [stripeInitialized, setStripeInitialized] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
     // Initialize Stripe instance
     const initializeStripe = async () => {
       try {
-        await getStripe();
+        const stripe = await getStripe();
+        if (!stripe) {
+          throw new Error("Failed to initialize Stripe");
+        }
         setStripeInitialized(true);
       } catch (error) {
         console.error("Failed to initialize Stripe:", error);
+        setError("Failed to initialize payment system. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -43,6 +48,20 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children 
     
     initializeStripe();
   }, []);
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center p-8 flex-col space-y-4">
+        <p className="text-red-500">{error}</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   if (loading || !stripeInitialized || !clientSecret) {
     return (
