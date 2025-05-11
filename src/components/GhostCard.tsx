@@ -5,7 +5,7 @@ import { Button } from "./ui/button";
 import { GhostProfile } from "@/types";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { Calendar, AlertTriangle, Flame, Loader } from "lucide-react";
+import { Calendar, AlertTriangle, Flame, Loader, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +15,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import StripeProvider from "./StripeProvider";
 import StripePaymentForm from "./StripePaymentForm";
@@ -30,11 +31,14 @@ const GhostCard: React.FC<GhostCardProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   const handlePaymentInitiation = async () => {
     setIsLoading(true);
+    setPaymentError(null);
+    
     try {
       // Calculate settlement amount based on the number of reported ghostings
       const settlementAmount = ghost.spookCount * 500;
@@ -52,6 +56,7 @@ const GhostCard: React.FC<GhostCardProps> = ({
 
       if (error) {
         console.error("Supabase function error:", error);
+        setPaymentError(error.message);
         throw new Error(error.message);
       }
 
@@ -63,6 +68,7 @@ const GhostCard: React.FC<GhostCardProps> = ({
         setDialogOpen(true);
       } else {
         console.error("No client secret returned in the data");
+        setPaymentError("No client secret returned");
         throw new Error('No client secret returned');
       }
     } catch (error) {
@@ -154,7 +160,10 @@ const GhostCard: React.FC<GhostCardProps> = ({
                 <span>Processing...</span>
               </>
             ) : (
-              `Settle Report – ${formattedSettlementAmount}`
+              <>
+                <CreditCard className="mr-2 h-4 w-4" />
+                <span>Settle Report – {formattedSettlementAmount}</span>
+              </>
             )}
           </Button>
           <p className="text-xs mt-2 text-gray-500">$450 goes to candidate, $50 supports the platform</p>
@@ -167,23 +176,39 @@ const GhostCard: React.FC<GhostCardProps> = ({
       
       {/* Payment Dialog */}
       <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Checkout - {displayName}</DialogTitle>
+        <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden">
+          <DialogHeader className="p-6 pb-0">
+            <DialogTitle className="text-xl">Checkout - {displayName}</DialogTitle>
             <DialogDescription>
-              Settlement payment for ghosting report
+              Complete your settlement payment
             </DialogDescription>
           </DialogHeader>
           
-          <div className="mt-4">
-            <StripeProvider clientSecret={clientSecret}>
-              <StripePaymentForm 
-                onSuccess={handlePaymentSuccess} 
-                onCancel={handlePaymentCancel}
-                amount={settlementAmount}
-                ghostName={displayName}
-              />
-            </StripeProvider>
+          <div className="p-6 pt-2">
+            {paymentError ? (
+              <div className="text-center space-y-4 py-4">
+                <AlertTriangle className="h-10 w-10 text-red-500 mx-auto" />
+                <h3 className="font-medium">Payment Error</h3>
+                <p className="text-sm text-muted-foreground">{paymentError}</p>
+                <div className="flex justify-center pt-4">
+                  <Button onClick={() => {
+                    setPaymentError(null);
+                    handlePaymentInitiation();
+                  }}>
+                    Try Again
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <StripeProvider clientSecret={clientSecret}>
+                <StripePaymentForm 
+                  onSuccess={handlePaymentSuccess} 
+                  onCancel={handlePaymentCancel}
+                  amount={settlementAmount}
+                  ghostName={displayName}
+                />
+              </StripeProvider>
+            )}
           </div>
         </DialogContent>
       </Dialog>

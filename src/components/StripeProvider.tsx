@@ -16,28 +16,48 @@ interface StripeProviderProps {
   children: React.ReactNode;
 }
 
+const getStripe = () => {
+  if (!stripePromise) {
+    console.log("Initializing Stripe with key:", STRIPE_PUBLISHABLE_KEY);
+    stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
+  }
+  return stripePromise;
+};
+
 const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children }) => {
   const [loading, setLoading] = useState(true);
+  const [stripeInitialized, setStripeInitialized] = useState(false);
   
   useEffect(() => {
-    if (!stripePromise) {
-      stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
-    }
-    setLoading(false);
+    // Initialize Stripe instance
+    const initializeStripe = async () => {
+      try {
+        await getStripe();
+        setStripeInitialized(true);
+      } catch (error) {
+        console.error("Failed to initialize Stripe:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    initializeStripe();
   }, []);
 
-  if (loading || !clientSecret) {
+  if (loading || !stripeInitialized || !clientSecret) {
     return (
-      <div className="flex justify-center items-center p-8">
-        <Loader className="h-6 w-6 animate-spin" />
-        <span className="ml-2">Loading payment form...</span>
+      <div className="flex justify-center items-center p-8 flex-col space-y-4">
+        <Loader className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-muted-foreground text-sm">
+          {!stripeInitialized ? "Initializing payment system..." : "Loading payment form..."}
+        </p>
       </div>
     );
   }
 
   return (
     <Elements
-      stripe={stripePromise}
+      stripe={getStripe()}
       options={{
         clientSecret,
         appearance: {
@@ -46,6 +66,18 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children 
             colorPrimary: '#000000',
             colorBackground: '#ffffff',
             colorText: '#30313d',
+            fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+            borderRadius: '8px',
+            fontSizeBase: '16px',
+          },
+          rules: {
+            '.Input': {
+              boxShadow: 'none',
+              padding: '12px',
+            },
+            '.Tab': {
+              padding: '10px 16px',
+            },
           },
         },
       }}
