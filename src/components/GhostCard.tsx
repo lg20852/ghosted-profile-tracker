@@ -59,9 +59,17 @@ const GhostCard: React.FC<GhostCardProps> = ({
       if (error) {
         console.error("Supabase function error:", error);
         
-        // More detailed error handling
+        // More detailed error handling for common issues
         if (error.message?.includes("non-2xx status code")) {
-          setPaymentError("Payment service returned an error. Check that your Stripe secret key is correctly configured in Supabase secrets.");
+          // Specific error for Stripe secret key issues
+          setPaymentError("Payment service returned an error. Make sure your Stripe secret key (starts with sk_) is correctly configured in Supabase secrets.");
+          
+          // Show toast with instructions
+          toast({
+            title: "Stripe Configuration Error",
+            description: "Please check that your Stripe secret key is set correctly in Supabase secrets.",
+            variant: "destructive"
+          });
         } else {
           setPaymentError(error.message || "Failed to initialize payment");
         }

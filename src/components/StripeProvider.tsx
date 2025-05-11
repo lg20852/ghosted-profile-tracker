@@ -6,7 +6,8 @@ import type { Stripe } from "@stripe/stripe-js";
 import { Loader, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-// This should be the TEST publishable key (starting with pk_test_)
+// Update the TEST publishable key to match your Stripe account
+// Make sure this key is from the same Stripe account as your secret key in Supabase secrets
 const STRIPE_PUBLISHABLE_KEY = "pk_test_51M1LMF3P4O5RlqN46u13eTMIWRr6FfSnofNSN8eWJ4WT80pDcGehWrRdvTJdY6yzyPQuGftxR1OSXDUchNHyXVOH00hDmLycZZ";
 
 // Initialize Stripe outside component to prevent multiple instances

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useStripe, useElements, PaymentElement } from "@stripe/react-stripe-js";
 import { Button } from "./ui/button";
@@ -60,14 +59,14 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
       setElementLoading(true);
       setElementError(null);
     } else if (activeStep === "payment") {
-      // Set a timeout to show an error if the element doesn't load within 10 seconds
+      // Increase timeout to 15 seconds (from 10)
       const timeoutId = setTimeout(() => {
         if (!elementReady && elementLoading) {
           console.warn("Payment element failed to load within timeout");
           setElementError("Payment form is taking too long to load. Please try again.");
           setElementLoading(false);
         }
-      }, 10000);
+      }, 15000); // 15 seconds timeout
       
       return () => clearTimeout(timeoutId);
     }
@@ -172,21 +171,25 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
     setActiveStep("payment");
   };
 
+  // Enhance retry function to force reload element state
   const handleRetry = () => {
     setErrorMessage(null);
     setPaymentStatus("idle");
     setElementError(null);
     
-    // Reset element state when retrying
+    // Reset payment processing state
+    setIsProcessing(false);
+    
+    // Force stripe element refresh
     setElementReady(false);
     setElementLoading(true);
     
     if (activeStep === "payment") {
-      // Reset payment element
       const paymentElement = elements?.getElement("payment");
       if (paymentElement) {
         try {
           paymentElement.clear();
+          console.log("Payment element cleared for retry");
         } catch (e) {
           console.error("Failed to clear payment element:", e);
         }
@@ -202,10 +205,17 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
     setElementError(null);
   };
 
-  // Handler for PaymentElement errors
+  // Handler for PaymentElement errors - add more detailed logging
   const handlePaymentElementError = (event: { error: { message: string; } }) => {
     console.error("PaymentElement error:", event.error);
-    setElementError(event.error.message);
+    
+    // Add more detailed error message for API key issues
+    if (event.error.message.includes("API key")) {
+      setElementError("Invalid Stripe API key. This is usually caused by a mismatch between your publishable key and secret key. Please try again or contact support.");
+    } else {
+      setElementError(event.error.message);
+    }
+    
     setElementLoading(false);
   };
 
