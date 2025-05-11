@@ -24,17 +24,21 @@ const queryClient = new QueryClient({
 });
 
 // Set up global error handlers using event listeners
-queryClient.getQueryCache().subscribe(event => {
-  // Check for errors in query observers
-  if ('error' in event && event.error) {
-    console.error("React Query error:", event.error);
+queryClient.getQueryCache().subscribe((event) => {
+  if (event.type === "observerResultsUpdated") {
+    const error = event.query.getObservers().find(o => o.getCurrentResult().error)?.getCurrentResult().error;
+    if (error) {
+      console.error("React Query error:", error);
+    }
   }
 });
 
-queryClient.getMutationCache().subscribe(event => {
-  // Check for errors in mutation observers
-  if ('error' in event && event.error) {
-    console.error("Mutation error:", event.error);
+queryClient.getMutationCache().subscribe((event) => {
+  if (event.type === "updated") {
+    const error = event.mutation.state.error;
+    if (error) {
+      console.error("Mutation error:", error);
+    }
   }
 });
 
