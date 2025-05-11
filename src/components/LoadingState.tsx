@@ -1,8 +1,9 @@
 
 import React from "react";
+import { Loader } from "lucide-react";
 
 const LoadingState = () => {
-  console.log("Rendering LoadingState component");
+  console.log("Rendering LoadingState component with enhanced visibility");
   
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-4 min-h-[300px]">
@@ -18,6 +19,14 @@ const LoadingState = () => {
           <div className="h-4 bg-gray-200 rounded w-4/6 mb-6"></div>
           <div className="h-10 bg-gray-200 rounded w-full mb-2"></div>
           <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+          
+          {/* Add a visible loading indicator */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="bg-white/80 p-4 rounded-lg shadow flex items-center space-x-2">
+              <Loader className="h-5 w-5 text-black animate-spin" />
+              <span className="text-sm font-medium">Loading...</span>
+            </div>
+          </div>
         </div>
       ))}
     </div>

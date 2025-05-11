@@ -4,9 +4,10 @@ import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import type { Stripe } from "@stripe/stripe-js";
 import { Loader, AlertCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
-// Using the test publishable key (make sure this is a test key, not a live key)
-const STRIPE_PUBLISHABLE_KEY = "pk_test_51RN3k4Al4XSYcvLdnHh8glThzxaBUMvO0WhQvyzqPGKLhYBkQ2NwJwlMPJCCadBs5pEgj0PqJm9Gh4hbNHLYUM6500JCk0ToNe";
+// Using a TEST publishable key - IMPORTANT: This must be a TEST key
+const STRIPE_PUBLISHABLE_KEY = "pk_test_51M1LMF3P4O5RlqN46u13eTMIWRr6FfSnofNSN8eWJ4WT80pDcGehWrRdvTJdY6yzyPQuGftxR1OSXDUchNHyXVOH00hDmLycZZ";
 
 // Initialize Stripe outside component to prevent multiple instances
 let stripePromise: Promise<Stripe | null>;
@@ -18,7 +19,7 @@ interface StripeProviderProps {
 
 const getStripe = () => {
   if (!stripePromise) {
-    console.log("Initializing Stripe with key:", STRIPE_PUBLISHABLE_KEY);
+    console.log("Initializing Stripe with test key");
     stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
   }
   return stripePromise;
@@ -29,42 +30,82 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children 
   const [stripeInitialized, setStripeInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [timeoutError, setTimeoutError] = useState(false);
+  const { toast } = useToast();
   
   useEffect(() => {
+    console.log("StripeProvider mounting, client secret:", clientSecret ? "Present" : "Not present");
+    
+    let isMounted = true;
+    let timeoutId: number | undefined;
+    
     // Initialize Stripe instance
     const initializeStripe = async () => {
       try {
         console.log("Starting Stripe initialization");
         const stripe = await getStripe();
+        console.log("Stripe initialization result:", stripe ? "Success" : "Failed");
+        
+        if (!isMounted) return;
+        
         if (!stripe) {
           throw new Error("Failed to initialize Stripe");
         }
+        
         console.log("Stripe initialized successfully");
         setStripeInitialized(true);
+        setTimeoutError(false);
+        toast({
+          title: "Payment system ready",
+          description: "You can now proceed with your payment",
+          variant: "default",
+        });
       } catch (error) {
         console.error("Failed to initialize Stripe:", error);
+        if (!isMounted) return;
+        
         setError("Failed to initialize payment system. Please try again later.");
+        toast({
+          title: "Payment Error",
+          description: "Could not initialize the payment system",
+          variant: "destructive",
+        });
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
     
     // Set a timeout to detect if Stripe is taking too long to initialize
-    const timeoutId = setTimeout(() => {
-      if (!stripeInitialized) {
-        console.warn("Stripe initialization timeout reached");
+    timeoutId = window.setTimeout(() => {
+      if (!stripeInitialized && isMounted) {
+        console.warn("Stripe initialization timeout reached after 8 seconds");
         setTimeoutError(true);
+        setLoading(false);
+        toast({
+          title: "Payment System Timeout",
+          description: "The payment system is taking too long to respond",
+          variant: "destructive",
+        });
       }
-    }, 10000); // 10 seconds timeout
+    }, 8000); // 8 seconds timeout
 
     initializeStripe();
     
-    return () => clearTimeout(timeoutId);
-  }, []);
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+      console.log("StripeProvider unmounting, cleaning up");
+    };
+  }, [stripeInitialized, toast]);
 
   // Log when client secret changes
   useEffect(() => {
     console.log("Client secret changed:", clientSecret ? "Present" : "Not present");
+    if (!clientSecret) {
+      console.warn("No client secret provided to StripeProvider");
+    }
   }, [clientSecret]);
   
   if (error || timeoutError) {
@@ -75,7 +116,7 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children 
     return (
       <div className="flex justify-center items-center p-8 flex-col space-y-4">
         <AlertCircle className="h-8 w-8 text-red-500" />
-        <p className="text-red-500">{errorMessage}</p>
+        <p className="text-red-500 font-medium">{errorMessage}</p>
         <button 
           onClick={() => window.location.reload()}
           className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300"
@@ -92,6 +133,9 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children 
         <Loader className="h-8 w-8 animate-spin text-primary" />
         <p className="text-muted-foreground text-sm">
           Initializing payment system...
+        </p>
+        <p className="text-xs text-muted-foreground">
+          This may take a few seconds. Please wait.
         </p>
       </div>
     );
@@ -116,7 +160,7 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children 
   }
 
   // Added more logging
-  console.log("Rendering Stripe Elements with client secret:", clientSecret ? "Valid" : "Invalid");
+  console.log("Rendering Stripe Elements with client secret");
 
   return (
     <Elements

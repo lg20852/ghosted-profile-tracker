@@ -1,27 +1,58 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import GhostCard from "./GhostCard";
 import { useGhost } from "@/contexts/ghost";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import ReportForm from "./ReportForm";
 import { Button } from "./ui/button";
 import LoadingState from "./LoadingState";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
 
 const GhostGrid = () => {
-  const { filteredGhosts, searchTerm, isFiltering, activeFilters, isLoading, error } = useGhost();
+  const { 
+    filteredGhosts, 
+    searchTerm, 
+    isFiltering, 
+    activeFilters, 
+    isLoading, 
+    error,
+    refreshGhosts 
+  } = useGhost();
+  const { toast } = useToast();
 
   // Debug logging
   console.log("GhostGrid rendering", {
-    ghostCount: filteredGhosts.length,
+    ghostCount: filteredGhosts?.length || 0,
     isLoading,
     isFiltering,
     hasError: !!error
   });
   
+  // Add effect to handle the case where we might have no ghosts loaded
+  useEffect(() => {
+    if (!isLoading && !isFiltering && filteredGhosts?.length === 0 && !error) {
+      console.log("No ghosts loaded, but no error state - might need to refresh");
+    }
+  }, [filteredGhosts, isLoading, isFiltering, error]);
+
+  const handleManualRefresh = () => {
+    toast({
+      title: "Refreshing...",
+      description: "Getting the latest data",
+    });
+    
+    if (refreshGhosts) {
+      refreshGhosts();
+    } else {
+      // Fallback if refreshGhosts isn't available
+      window.location.reload();
+    }
+  };
+  
   // Sort by spook count (descending)
-  const sortedGhosts = [...filteredGhosts].sort((a, b) => b.spookCount - a.spookCount);
+  const sortedGhosts = filteredGhosts ? [...filteredGhosts].sort((a, b) => b.spookCount - a.spookCount) : [];
   
   if (isLoading) {
     console.log("Showing loading state");
@@ -39,10 +70,21 @@ const GhostGrid = () => {
             {error}
           </AlertDescription>
         </Alert>
-        <p className="mt-2 text-gray-600">
-          Please add a report to get started.
-        </p>
-        <div className="mt-4">
+        
+        <div className="mt-4 flex flex-col items-center gap-3">
+          <Button 
+            variant="outline" 
+            onClick={handleManualRefresh}
+            className="flex gap-2 items-center"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Retry
+          </Button>
+          
+          <p className="mt-2 text-gray-600">
+            Or add a report to get started.
+          </p>
+          
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="outline" className="border-black hover:bg-black hover:text-white transition-all">
