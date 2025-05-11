@@ -4,8 +4,8 @@ import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe, Stripe } from "@stripe/stripe-js";
 import { Loader } from "lucide-react";
 
-// Replace with your publishable key when in production
-const STRIPE_PUBLISHABLE_KEY = "pk_test_51OP0huDgYNiY9m3cRsjrOOuKrsOGkRLmJHQOVw1TiIb6pf8GIghDx5GSTXUF5U8kyCdAW4ej97d15ROUWqBrt0EQ00Aiedb1af";
+// Using the live publishable key
+const STRIPE_PUBLISHABLE_KEY = "pk_live_51RN3k4Al4XSYcvLdnHh8glThz1Dr2A25On1lFDlJ8iYSg9B2ITGhGu4XcFEiDSoPJS8q72N82Sh1c5wJknXxtiRE00YfUlkcnI";
 
 // Initialize Stripe outside component to prevent multiple instances
 let stripePromise: Promise<Stripe | null>;
