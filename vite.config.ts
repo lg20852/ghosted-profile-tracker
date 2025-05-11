@@ -29,7 +29,6 @@ export default defineConfig(({ mode }) => ({
     },
     rollupOptions: {
       external: ['@stripe/react-stripe-js', '@stripe/stripe-js']
-      // Remove manual chunks since we can't have them when the modules are external
     }
   }
 }));
