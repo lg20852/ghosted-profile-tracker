@@ -18,6 +18,7 @@ const handler = async (req: Request) => {
       throw new Error("STRIPE_SECRET_KEY is not set in environment variables");
     }
 
+    console.log("Initializing Stripe with secret key");
     const stripe = new Stripe(STRIPE_SECRET_KEY, {
       apiVersion: "2023-10-16",
     });
@@ -30,6 +31,8 @@ const handler = async (req: Request) => {
     }
 
     const displayName = companyName || ghostName;
+    
+    console.log(`Creating payment intent for ${displayName} with amount ${amount}`);
     
     // Create Payment Intent
     const paymentIntent = await stripe.paymentIntents.create({
@@ -46,6 +49,8 @@ const handler = async (req: Request) => {
       description: `Settlement payment for ${spookCount} ghosting incident${spookCount !== 1 ? 's' : ''} - ${displayName}`
     });
 
+    console.log("Payment intent created successfully");
+    
     return new Response(JSON.stringify({ 
       clientSecret: paymentIntent.client_secret 
     }), {

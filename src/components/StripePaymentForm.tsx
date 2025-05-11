@@ -30,6 +30,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [elementReady, setElementReady] = useState(false);
   const [elementLoading, setElementLoading] = useState(true);
+  const [elementError, setElementError] = useState<string | null>(null);
   const [activeStep, setActiveStep] = useState<CheckoutStep>("details");
   const { toast } = useToast();
 
@@ -43,23 +44,34 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
   const isPaymentSystemReady = !!stripe && !!elements && elementReady;
 
   useEffect(() => {
-    // Reset element ready state when moving between steps
+    console.log("Payment System Ready State:", { 
+      stripe: !!stripe, 
+      elements: !!elements, 
+      elementReady, 
+      elementLoading,
+      elementError 
+    });
+  }, [stripe, elements, elementReady, elementLoading, elementError]);
+
+  // Reset element ready state when moving between steps
+  useEffect(() => {
     if (activeStep === "details") {
       setElementReady(false);
       setElementLoading(true);
+      setElementError(null);
+    } else if (activeStep === "payment") {
+      // Set a timeout to show an error if the element doesn't load within 10 seconds
+      const timeoutId = setTimeout(() => {
+        if (!elementReady && elementLoading) {
+          console.warn("Payment element failed to load within timeout");
+          setElementError("Payment form is taking too long to load. Please try again.");
+          setElementLoading(false);
+        }
+      }, 10000);
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [activeStep]);
-
-  useEffect(() => {
-    // Log current ready state for debugging
-    console.log("Payment readiness state:", {
-      stripeReady: !!stripe,
-      elementsReady: !!elements,
-      elementReady,
-      elementLoading,
-      activeStep
-    });
-  }, [stripe, elements, elementReady, elementLoading, activeStep]);
 
   const formattedAmount = new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -163,6 +175,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
   const handleRetry = () => {
     setErrorMessage(null);
     setPaymentStatus("idle");
+    setElementError(null);
     
     // Reset element state when retrying
     setElementReady(false);
@@ -185,6 +198,14 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
   const handlePaymentElementReady = () => {
     console.log("PaymentElement is ready");
     setElementReady(true);
+    setElementLoading(false);
+    setElementError(null);
+  };
+
+  // Handler for PaymentElement errors
+  const handlePaymentElementError = (event: { error: { message: string; } }) => {
+    console.error("PaymentElement error:", event.error);
+    setElementError(event.error.message);
     setElementLoading(false);
   };
 
@@ -258,19 +279,47 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
                 </div>
                 
                 <div className="bg-muted/30 p-5 rounded-md border">
-                  {elementLoading && (
+                  {elementLoading && !elementError && (
                     <div className="flex justify-center items-center py-8">
                       <Loader className="mr-2 h-5 w-5 animate-spin" />
                       <span className="text-sm text-muted-foreground">Loading payment form...</span>
                     </div>
                   )}
-                  <PaymentElement 
-                    options={{
-                      layout: { type: 'tabs', defaultCollapsed: false },
-                    }}
-                    onReady={handlePaymentElementReady}
-                    className={elementLoading ? "opacity-0 h-0" : ""}
-                  />
+                  
+                  {elementError && (
+                    <div className="flex flex-col justify-center items-center py-8 text-center space-y-2">
+                      <AlertTriangle className="h-8 w-8 text-red-500" />
+                      <p className="text-red-500">{elementError}</p>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => {
+                          setElementLoading(true);
+                          setElementError(null);
+                          setTimeout(() => handleRetry(), 500);
+                        }}
+                      >
+                        Try Again
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {!elementError && (
+                    <PaymentElement 
+                      options={{
+                        layout: { type: 'tabs', defaultCollapsed: false },
+                      }}
+                      onReady={handlePaymentElementReady}
+                      onLoadError={handlePaymentElementError}
+                      onChange={(event) => {
+                        if (event.error) {
+                          handlePaymentElementError(event);
+                        }
+                      }}
+                      className={elementLoading ? "opacity-0 h-0" : ""}
+                    />
+                  )}
                 </div>
                 
                 {errorMessage && (
@@ -307,7 +356,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
                 ) : (
                   <Button
                     type="submit"
-                    disabled={!isPaymentSystemReady || isProcessing || paymentStatus === "success"}
+                    disabled={!isPaymentSystemReady || isProcessing || paymentStatus === "success" || elementError !== null}
                     className="relative min-w-[120px]"
                   >
                     {isProcessing ? (

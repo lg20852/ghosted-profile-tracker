@@ -4,6 +4,7 @@ import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import type { Stripe } from "@stripe/stripe-js";
 import { Loader, AlertCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 // Using a TEST publishable key - IMPORTANT: This must be a TEST key
 const STRIPE_PUBLISHABLE_KEY = "pk_test_51M1LMF3P4O5RlqN46u13eTMIWRr6FfSnofNSN8eWJ4WT80pDcGehWrRdvTJdY6yzyPQuGftxR1OSXDUchNHyXVOH00hDmLycZZ";
@@ -18,7 +19,7 @@ interface StripeProviderProps {
 
 const getStripe = () => {
   if (!stripePromise) {
-    console.log("Initializing Stripe with test key");
+    console.log("Initializing Stripe with publishable key");
     stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
   }
   return stripePromise;
@@ -29,6 +30,15 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children 
   const [stripeInitialized, setStripeInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [timeoutError, setTimeoutError] = useState(false);
+  const { toast } = useToast();
+  
+  // Force reinitialize Stripe if there were previous errors
+  useEffect(() => {
+    if (error || timeoutError) {
+      console.log("Attempting to reinitialize Stripe due to previous errors");
+      stripePromise = null; // Reset the promise to force new initialization
+    }
+  }, [error, timeoutError]);
   
   useEffect(() => {
     console.log("StripeProvider mounting, client secret:", clientSecret ? "Present" : "Not present");
@@ -52,7 +62,7 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children 
         console.log("Stripe initialized successfully");
         setStripeInitialized(true);
         setTimeoutError(false);
-        // Removed toast notification here to prevent unnecessary UI elements
+        setError(null);
       } catch (error) {
         console.error("Failed to initialize Stripe:", error);
         if (!isMounted) return;
@@ -87,6 +97,12 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children 
   // Log when client secret changes
   useEffect(() => {
     console.log("Client secret changed:", clientSecret ? "Present" : "Not present");
+    
+    // Reset loading state when client secret changes to ensure elements are properly initialized
+    if (clientSecret) {
+      setLoading(true);
+      setTimeout(() => setLoading(false), 1000); // Give a brief moment for Elements to initialize with the new secret
+    }
   }, [clientSecret]);
   
   if (error || timeoutError) {
