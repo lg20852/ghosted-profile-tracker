@@ -20,6 +20,7 @@ import {
 import StripeProvider from "./StripeProvider";
 import StripePaymentForm from "./StripePaymentForm";
 import { useNavigate } from "react-router-dom";
+import { Alert, AlertDescription } from "./ui/alert";
 
 interface GhostCardProps {
   ghost: GhostProfile;
@@ -56,8 +57,8 @@ const GhostCard: React.FC<GhostCardProps> = ({
 
       if (error) {
         console.error("Supabase function error:", error);
-        setPaymentError(error.message);
-        throw new Error(error.message);
+        setPaymentError(error.message || "Failed to initialize payment");
+        throw new Error(error.message || "Failed to initialize payment");
       }
 
       console.log("Payment intent created:", data);
@@ -67,15 +68,21 @@ const GhostCard: React.FC<GhostCardProps> = ({
         setClientSecret(data.clientSecret);
         setDialogOpen(true);
       } else {
-        console.error("No client secret returned in the data");
-        setPaymentError("No client secret returned");
-        throw new Error('No client secret returned');
+        // Check if there's an error message in the response
+        if (data?.error) {
+          setPaymentError(data.error);
+          throw new Error(data.error);
+        } else {
+          console.error("No client secret returned in the data");
+          setPaymentError("No client secret returned");
+          throw new Error('No client secret returned');
+        }
       }
     } catch (error) {
       console.error('Error creating payment intent:', error);
       toast({
         title: "Payment Error",
-        description: "Failed to initialize payment. Please try again.",
+        description: error.message || "Failed to initialize payment. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -190,6 +197,11 @@ const GhostCard: React.FC<GhostCardProps> = ({
                 <AlertTriangle className="h-10 w-10 text-red-500 mx-auto" />
                 <h3 className="font-medium">Payment Error</h3>
                 <p className="text-sm text-muted-foreground">{paymentError}</p>
+                <Alert className="mt-4 border-amber-200 bg-amber-50 text-amber-900">
+                  <AlertDescription className="text-sm">
+                    This is a demo app. In a real application, you would be connecting to your Stripe account.
+                  </AlertDescription>
+                </Alert>
                 <div className="flex justify-center pt-4">
                   <Button onClick={() => {
                     setPaymentError(null);
