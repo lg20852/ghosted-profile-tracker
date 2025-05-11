@@ -6,7 +6,7 @@ import type { Stripe } from "@stripe/stripe-js";
 import { Loader, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-// Using a TEST publishable key - IMPORTANT: This must be a TEST key
+// This should be the TEST publishable key (starting with pk_test_)
 const STRIPE_PUBLISHABLE_KEY = "pk_test_51M1LMF3P4O5RlqN46u13eTMIWRr6FfSnofNSN8eWJ4WT80pDcGehWrRdvTJdY6yzyPQuGftxR1OSXDUchNHyXVOH00hDmLycZZ";
 
 // Initialize Stripe outside component to prevent multiple instances
@@ -20,6 +20,12 @@ interface StripeProviderProps {
 const getStripe = () => {
   if (!stripePromise) {
     console.log("Initializing Stripe with publishable key");
+    
+    // Validate the key format (should start with pk_)
+    if (!STRIPE_PUBLISHABLE_KEY.startsWith("pk_")) {
+      console.error("Invalid Stripe publishable key format. Keys should start with 'pk_'");
+    }
+    
     stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
   }
   return stripePromise;
@@ -156,7 +162,6 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children 
     );
   }
 
-  // Added more logging
   console.log("Rendering Stripe Elements with client secret");
 
   return (

@@ -33,6 +33,7 @@ const GhostCard: React.FC<GhostCardProps> = ({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -57,7 +58,14 @@ const GhostCard: React.FC<GhostCardProps> = ({
 
       if (error) {
         console.error("Supabase function error:", error);
-        setPaymentError(error.message || "Failed to initialize payment");
+        
+        // More detailed error handling
+        if (error.message?.includes("non-2xx status code")) {
+          setPaymentError("Payment service returned an error. Check that your Stripe secret key is correctly configured in Supabase secrets.");
+        } else {
+          setPaymentError(error.message || "Failed to initialize payment");
+        }
+        
         throw new Error(error.message || "Failed to initialize payment");
       }
 
@@ -74,7 +82,7 @@ const GhostCard: React.FC<GhostCardProps> = ({
           throw new Error(data.error);
         } else {
           console.error("No client secret returned in the data");
-          setPaymentError("No client secret returned");
+          setPaymentError("No client secret returned from payment service");
           throw new Error('No client secret returned');
         }
       }
@@ -106,6 +114,12 @@ const GhostCard: React.FC<GhostCardProps> = ({
 
   const handlePaymentCancel = () => {
     setDialogOpen(false);
+  };
+
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+    setPaymentError(null);
+    handlePaymentInitiation();
   };
 
   // Use company name as the main display
@@ -199,14 +213,11 @@ const GhostCard: React.FC<GhostCardProps> = ({
                 <p className="text-sm text-muted-foreground">{paymentError}</p>
                 <Alert className="mt-4 border-amber-200 bg-amber-50 text-amber-900">
                   <AlertDescription className="text-sm">
-                    This is a demo app. In a real application, you would be connecting to your Stripe account.
+                    This is a demo app. Make sure you have set up the correct Stripe secret key (starting with sk_) in the Supabase edge function secrets, and that it matches your publishable key's account.
                   </AlertDescription>
                 </Alert>
                 <div className="flex justify-center pt-4">
-                  <Button onClick={() => {
-                    setPaymentError(null);
-                    handlePaymentInitiation();
-                  }}>
+                  <Button onClick={handleRetry}>
                     Try Again
                   </Button>
                 </div>
