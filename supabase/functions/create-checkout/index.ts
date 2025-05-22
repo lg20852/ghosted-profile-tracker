@@ -55,10 +55,6 @@ const handler = async (req: Request) => {
     try {
       stripe = new Stripe(STRIPE_SECRET_KEY, {
         apiVersion: "2023-10-16",
-        // Adding HTTP timeout configuration to prevent timeouts
-        httpAgent: {
-          timeoutMs: 30000, // 30 seconds
-        },
       });
     } catch (stripeInitError) {
       logStep("Failed to initialize Stripe", stripeInitError);
@@ -99,8 +95,6 @@ const handler = async (req: Request) => {
         automatic_payment_methods: {
           enabled: true,
         },
-        // Adding a longer timeout for the payment intent creation
-        idempotencyKey: `${ghostName}-${amount}-${Date.now()}`, // Prevent duplicate charges
         description: `Settlement payment for ${spookCount} ghosting incident${spookCount !== 1 ? 's' : ''} - ${displayName}`
       });
       

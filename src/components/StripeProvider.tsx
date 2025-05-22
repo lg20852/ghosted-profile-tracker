@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
@@ -14,7 +13,7 @@ const STRIPE_PUBLISHABLE_KEY = "pk_live_51RN3k4Al4XSYcvLdnHh8glThz1Dr2A25On1lFDl
 
 // Initialize Stripe outside component to prevent multiple instances
 let stripeInitializationAttempts = 0;
-const MAX_INITIALIZATION_ATTEMPTS = 5; // Increased from 3 to 5
+const MAX_INITIALIZATION_ATTEMPTS = 3;
 
 interface StripeProviderProps {
   clientSecret: string | null;
@@ -63,11 +62,10 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children 
         setStripeInstance(newStripePromise);
         
         // Attempt to resolve the promise to check for errors
-        // Increased timeout from 10s to 30s
         const stripe = await Promise.race([
           newStripePromise,
           new Promise<null>((_, reject) => 
-            setTimeout(() => reject(new Error("Stripe initialization timeout")), 30000)
+            setTimeout(() => reject(new Error("Stripe initialization timeout")), 10000)
           )
         ]);
         
@@ -128,14 +126,14 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children 
     }
     
     // Set a timeout to detect if Stripe is taking too long to initialize
-    // Increased from 15 seconds to 30 seconds
+    // Increased to 15 seconds for production environments
     timeoutId = window.setTimeout(() => {
       if (!stripeInitialized && isMounted) {
-        console.warn("Stripe initialization timeout reached after 30 seconds");
+        console.warn("Stripe initialization timeout reached after 15 seconds");
         setTimeoutError(true);
         setLoading(false);
       }
-    }, 30000); // 30 seconds timeout (increased from 15)
+    }, 15000); // 15 seconds timeout for production
     
     // Cleanup function
     return () => {
@@ -153,8 +151,7 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children 
     if (clientSecret && stripeInitialized) {
       setLoading(true);
       // Give Elements time to initialize with the new secret
-      // Increased from 2s to 5s
-      setTimeout(() => setLoading(false), 5000);
+      setTimeout(() => setLoading(false), 2000);
     }
   }, [clientSecret, stripeInitialized]);
   
