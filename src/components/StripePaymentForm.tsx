@@ -72,14 +72,14 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
         clearTimeout(loadingTimeout);
       }
       
-      // Increase timeout to 20 seconds (from 15)
+      // Increase timeout to 30 seconds (from 20)
       const timeoutId = window.setTimeout(() => {
         if (!elementReady && elementLoading) {
           console.warn("Payment element failed to load within timeout");
           setElementError("Payment form is taking too long to load. Please try again.");
           setElementLoading(false);
         }
-      }, 20000); // 20 seconds timeout
+      }, 30000); // 30 seconds timeout (increased from 20)
       
       setLoadingTimeout(timeoutId);
       
