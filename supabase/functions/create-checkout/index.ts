@@ -1,9 +1,10 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import Stripe from 'https://esm.sh/stripe@14.21.0'
 import { corsHeaders } from '../_shared/cors.ts'
 
-const stripe = Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
   apiVersion: '2023-10-16',
   httpClient: Stripe.createFetchHttpClient(),
 })
@@ -71,34 +72,19 @@ serve(async (req) => {
       )
     }
 
-    // Create Stripe checkout session with security metadata
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: currency.toLowerCase(),
-            product_data: {
-              name: `Settlement for ${ghostName}`,
-              description: 'Compensation for job ghosting experience',
-            },
-            unit_amount: Math.round(numericAmount * 100), // Convert to cents
-          },
-          quantity: 1,
-        },
-      ],
-      mode: 'payment',
-      success_url: `${req.headers.get('origin')}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get('origin')}/checkout/canceled`,
+    // Create Stripe payment intent for immediate payment
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(numericAmount * 100), // Convert to cents
+      currency: currency.toLowerCase(),
       metadata: {
         ghost_name: ghostName,
-        user_id: user.id, // Track which user initiated the payment
+        user_id: user.id,
       },
-      customer_email: user.email, // Pre-fill with authenticated user's email
+      customer_email: user.email,
     })
 
     return new Response(
-      JSON.stringify({ url: session.url }),
+      JSON.stringify({ clientSecret: paymentIntent.client_secret }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
