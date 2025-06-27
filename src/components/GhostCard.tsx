@@ -1,10 +1,11 @@
+
 import React, { useState } from "react";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { GhostProfile } from "@/types";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { Calendar, AlertTriangle, Flame, Loader, CreditCard } from "lucide-react";
+import { Calendar, AlertTriangle, Flame, Loader, CreditCard, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -14,7 +15,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import StripeProvider from "./StripeProvider";
 import StripePaymentForm from "./StripePaymentForm";
@@ -26,7 +26,8 @@ interface GhostCardProps {
   ghost: GhostProfile;
 }
 
-// Custom error message component
+const PAYMENT_TIMEOUT = 30000; // 30 seconds
+
 const PaymentErrorMessage = ({ error, onRetry }: { error: string | null, onRetry: () => void }) => (
   <div className="text-center space-y-4 py-4">
     <AlertTriangle className="h-10 w-10 text-red-500 mx-auto" />
@@ -38,7 +39,8 @@ const PaymentErrorMessage = ({ error, onRetry }: { error: string | null, onRetry
       </AlertDescription>
     </Alert>
     <div className="flex justify-center pt-4">
-      <Button onClick={onRetry}>
+      <Button onClick={onRetry} className="flex items-center gap-2">
+        <RefreshCw className="h-4 w-4" />
         Try Again
       </Button>
     </div>
@@ -55,16 +57,31 @@ const GhostCard: React.FC<GhostCardProps> = ({ ghost }) => {
   const navigate = useNavigate();
 
   const handlePaymentInitiation = async () => {
+    console.log(`[GhostCard] Starting payment initiation (attempt ${retryCount + 1})`);
     setIsLoading(true);
     setPaymentError(null);
     
     try {
-      // Calculate settlement amount based on the number of reported ghostings
       const settlementAmount = ghost.spookCount * 500;
       
-      console.log("Creating payment intent for:", ghost.name, "Amount:", settlementAmount);
+      console.log("[GhostCard] Creating payment intent:", {
+        ghost: ghost.name,
+        company: ghost.company,
+        amount: settlementAmount,
+        spookCount: ghost.spookCount
+      });
       
-      // Improved error handling with more detailed logging
+      // Create a timeout promise
+      const timeoutPromise = new Promise<{data: null, error: { message: string }}>((resolve) => {
+        setTimeout(() => {
+          resolve({
+            data: null, 
+            error: { message: "Payment service took too long to respond. Please try again." }
+          });
+        }, PAYMENT_TIMEOUT);
+      });
+      
+      // Race between API call and timeout
       const { data, error } = await Promise.race([
         supabase.functions.invoke('create-checkout', {
           body: {
@@ -74,63 +91,58 @@ const GhostCard: React.FC<GhostCardProps> = ({ ghost }) => {
             spookCount: ghost.spookCount
           }
         }),
-        new Promise<{data: null, error: { message: string }}>((resolve) => {
-          // Add a timeout to prevent hanging if the API call takes too long
-          setTimeout(() => {
-            resolve({
-              data: null, 
-              error: { message: "Payment service took too long to respond. Please try again." }
-            });
-          }, 10000);
-        })
+        timeoutPromise
       ]);
 
       if (error) {
-        console.error("Supabase function error:", error);
+        console.error("[GhostCard] Supabase function error:", error);
         
-        // More detailed error handling for common issues
-        if (error.message?.includes("401") || error.message?.includes("unauthorized")) {
-          setPaymentError("Authentication error: Please check that you're properly logged in, or try refreshing the page.");
-          
-          toast({
-            title: "Authentication Error",
-            description: "There was a problem authenticating your request. Please try refreshing the page.",
-            variant: "destructive"
-          });
+        let userFriendlyError = "Failed to initialize payment";
+        
+        if (error.message?.includes("timeout") || error.message?.includes("took too long")) {
+          userFriendlyError = "Payment service is taking too long to respond. Please check your internet connection and try again.";
+        } else if (error.message?.includes("401") || error.message?.includes("unauthorized")) {
+          userFriendlyError = "Authentication error: Please refresh the page and try again.";
+        } else if (error.message?.includes("authentication") || error.message?.includes("Invalid API Key")) {
+          userFriendlyError = "Payment service configuration error. Please check that your Stripe secret key is correctly configured.";
+        } else if (error.message?.includes("network") || error.message?.includes("connection")) {
+          userFriendlyError = "Network connection issue. Please check your internet connection and try again.";
         } else if (error.message?.includes("non-2xx status code")) {
-          // Specific error for Stripe secret key issues
-          setPaymentError("Payment service returned an error. Make sure your Stripe secret key (starts with sk_) is correctly configured in Supabase secrets.");
-          
-          // Show toast with instructions
-          toast({
-            title: "Stripe Configuration Error",
-            description: "Please check that your Stripe secret key is set correctly in Supabase secrets.",
-            variant: "destructive"
-          });
+          userFriendlyError = "Payment service returned an error. Please check your Stripe configuration or try again later.";
         } else {
-          setPaymentError(error.message || "Failed to initialize payment");
+          userFriendlyError = error.message || "An unexpected error occurred";
         }
         
-        // Don't throw, just log the error
-        console.error("Payment initiation failed:", error.message);
+        setPaymentError(userFriendlyError);
+        
+        toast({
+          title: "Payment Error",
+          description: userFriendlyError,
+          variant: "destructive"
+        });
+        
       } else if (data?.clientSecret) {
-        // Store the client secret and open the dialog
+        console.log("[GhostCard] Payment intent created successfully");
         setClientSecret(data.clientSecret);
         setDialogOpen(true);
+        setRetryCount(0); // Reset retry count on success
+        
       } else {
-        // Check if there's an error message in the response
-        if (data?.error) {
-          setPaymentError(data.error);
-          console.error("Payment error from response:", data.error);
-        } else {
-          console.error("No client secret returned in the data");
-          setPaymentError("No client secret returned from payment service");
-        }
+        console.error("[GhostCard] No client secret in response:", data);
+        
+        const errorMsg = data?.error || "No client secret returned from payment service";
+        setPaymentError(errorMsg);
+        
+        toast({
+          title: "Payment Error",
+          description: errorMsg,
+          variant: "destructive"
+        });
       }
     } catch (error) {
-      // This should only catch unexpected errors that weren't handled above
-      console.error('Unexpected error creating payment intent:', error);
-      setPaymentError(error.message || "An unexpected error occurred. Please try again.");
+      console.error('[GhostCard] Unexpected error:', error);
+      const errorMsg = error.message || "An unexpected error occurred. Please try again.";
+      setPaymentError(errorMsg);
       
       toast({
         title: "Payment Error",
@@ -138,17 +150,15 @@ const GhostCard: React.FC<GhostCardProps> = ({ ghost }) => {
         variant: "destructive"
       });
     } finally {
-      // Always reset loading state regardless of success or failure
       setIsLoading(false);
     }
   };
 
   const handleDialogClose = () => {
     setDialogOpen(false);
-    // Optional: Clear client secret when dialog is closed
     setTimeout(() => {
       setClientSecret(null);
-    }, 300); // Small delay to allow dialog close animation to complete
+    }, 300);
   };
 
   const handlePaymentSuccess = () => {
@@ -161,28 +171,22 @@ const GhostCard: React.FC<GhostCardProps> = ({ ghost }) => {
   };
 
   const handleRetry = () => {
+    console.log("[GhostCard] Manual retry requested");
     setRetryCount(prev => prev + 1);
     setPaymentError(null);
     handlePaymentInitiation();
   };
 
-  // Use company name as the main display
   const displayName = ghost.company || ghost.name;
-
-  // Get initials for avatar fallback
   const initials = displayName.substring(0, 2).toUpperCase();
 
-  // Generate a stock building/office image for the company
-  // This will give us a consistent but unique image per company
   const companyImageId = Math.abs(displayName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 10) + 1;
   const stockImageId = ["photo-1487958449943-2429e8be8625", "photo-1518005020951-eccb494ad742", "photo-1496307653780-42ee777d4833", "photo-1431576901776-e539bd916ba2", "photo-1449157291145-7efd050a4d0e", "photo-1459767129954-1b1c1f9b9ace", "photo-1460574283810-2aab119d8511", "photo-1551038247-3d9af20df552", "photo-1524230572899-a752b3835840", "photo-1493397212122-2b85dda8106b"][companyImageId - 1];
   const companyImageUrl = `https://images.unsplash.com/${stockImageId}?auto=format&fit=crop&w=300&h=300&q=80`;
 
-  // Determine if this is a frequent or repeat offender
   const isFrequentOffender = ghost.spookCount >= 3;
   const isRepeatOffender = ghost.spookCount >= 5;
 
-  // Calculate settlement amount based on the number of reported ghostings
   const settlementAmount = ghost.spookCount * 500;
   const formattedSettlementAmount = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -239,7 +243,6 @@ const GhostCard: React.FC<GhostCardProps> = ({ ghost }) => {
         </CardContent>
       </Card>
       
-      {/* Payment Dialog */}
       <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden">
           <DialogHeader className="p-6 pb-0">

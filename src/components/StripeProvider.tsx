@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
@@ -8,19 +9,18 @@ import { Button } from "@/components/ui/button";
 import ErrorBoundary from "./ErrorBoundary";
 
 // Update the LIVE publishable key to match your Stripe account
-// Make sure this key is from the same Stripe account as your secret key in Supabase secrets
 const STRIPE_PUBLISHABLE_KEY = "pk_live_51RN3k4Al4XSYcvLdnHh8glThz1Dr2A25On1lFDlJ8iYSg9B2ITGhGu4XcFEiDSoPJS8q72N82Sh1c5wJknXxtiRE00YfUlkcnI";
 
-// Initialize Stripe outside component to prevent multiple instances
-let stripeInitializationAttempts = 0;
+// Enhanced configuration for better reliability
 const MAX_INITIALIZATION_ATTEMPTS = 3;
+const INITIALIZATION_TIMEOUT = 30000; // 30 seconds
+const RETRY_DELAY = 3000; // 3 seconds between retries
 
 interface StripeProviderProps {
   clientSecret: string | null;
   children: React.ReactNode;
 }
 
-// Custom fallback component for Stripe-specific errors
 const StripeFallback = ({ onRetry }: { onRetry: () => void }) => (
   <div className="flex justify-center items-center p-8 flex-col space-y-4">
     <AlertCircle className="h-8 w-8 text-amber-500" />
@@ -41,193 +41,165 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children 
   const [loading, setLoading] = useState(true);
   const [stripeInitialized, setStripeInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [timeoutError, setTimeoutError] = useState(false);
-  // Store the stripe promise instead of the resolved instance
   const [stripeInstance, setStripeInstance] = useState<Promise<Stripe | null> | null>(null);
+  const [attemptCount, setAttemptCount] = useState(0);
   const { toast } = useToast();
   
   const initializeStripe = async (forceRefresh = false) => {
+    console.log(`[StripeProvider] Starting initialization attempt ${attemptCount + 1}/${MAX_INITIALIZATION_ATTEMPTS}`);
     setLoading(true);
     setError(null);
-    setTimeoutError(false);
     
     try {
-      console.log("Starting Stripe initialization" + (forceRefresh ? " (forced refresh)" : ""));
-      
-      // Create a new promise that will resolve to the Stripe instance
-      let newStripePromise: Promise<Stripe | null>;
-      
-      try {
-        newStripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
-        setStripeInstance(newStripePromise);
-        
-        // Attempt to resolve the promise to check for errors
-        const stripe = await Promise.race([
-          newStripePromise,
-          new Promise<null>((_, reject) => 
-            setTimeout(() => reject(new Error("Stripe initialization timeout")), 10000)
-          )
-        ]);
-        
-        if (!stripe) {
-          throw new Error("Failed to initialize Stripe");
-        }
-        
-        console.log("Stripe initialized successfully");
-        setStripeInitialized(true);
-        setTimeoutError(false);
-        setError(null);
-      } catch (innerError) {
-        console.error("Error during Stripe initialization:", innerError);
-        
-        // If this is not the last attempt, retry
-        if (stripeInitializationAttempts < MAX_INITIALIZATION_ATTEMPTS) {
-          stripeInitializationAttempts++;
-          console.log(`Retrying Stripe initialization (attempt ${stripeInitializationAttempts}/${MAX_INITIALIZATION_ATTEMPTS})`);
-          
-          // Set a short timeout before retrying
-          setTimeout(() => {
-            if (stripeInitialized === false) {
-              initializeStripe(true);
-            }
-          }, 2000);
-          return;
-        }
-        
-        throw innerError;
+      // Validate publishable key format
+      if (!STRIPE_PUBLISHABLE_KEY.startsWith("pk_")) {
+        throw new Error("Invalid Stripe publishable key format");
       }
+      
+      console.log("[StripeProvider] Creating Stripe instance...");
+      const newStripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
+      setStripeInstance(newStripePromise);
+      
+      // Race between Stripe loading and timeout
+      const stripe = await Promise.race([
+        newStripePromise,
+        new Promise<null>((_, reject) => 
+          setTimeout(() => reject(new Error("Stripe initialization timeout")), INITIALIZATION_TIMEOUT)
+        )
+      ]);
+      
+      if (!stripe) {
+        throw new Error("Failed to initialize Stripe - service unavailable");
+      }
+      
+      console.log("[StripeProvider] Stripe initialized successfully");
+      setStripeInitialized(true);
+      setError(null);
+      setAttemptCount(0);
+      
     } catch (error) {
-      console.error("Failed to initialize Stripe:", error);
-      setError("Failed to initialize payment system. You can still browse the site.");
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      console.error(`[StripeProvider] Initialization failed (attempt ${attemptCount + 1}):`, errorMessage);
+      
+      setAttemptCount(prev => prev + 1);
+      
+      // Retry logic with exponential backoff
+      if (attemptCount < MAX_INITIALIZATION_ATTEMPTS - 1) {
+        const delay = RETRY_DELAY * Math.pow(2, attemptCount); // Exponential backoff
+        console.log(`[StripeProvider] Retrying in ${delay}ms...`);
+        
+        setTimeout(() => {
+          initializeStripe(true);
+        }, delay);
+        return;
+      }
+      
+      // All attempts failed
+      let userFriendlyError = "Failed to connect to payment system.";
+      
+      if (errorMessage.includes("timeout")) {
+        userFriendlyError = "Payment system is taking too long to respond. Please check your internet connection.";
+      } else if (errorMessage.includes("API key") || errorMessage.includes("Invalid")) {
+        userFriendlyError = "Payment system configuration error. Please contact support.";
+      } else if (errorMessage.includes("network") || errorMessage.includes("connection")) {
+        userFriendlyError = "Network connection issue. Please check your internet and try again.";
+      }
+      
+      setError(userFriendlyError);
+      
+      toast({
+        title: "Payment System Error",
+        description: userFriendlyError,
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   };
   
-  // Force reinitialize Stripe if there were previous errors
-  useEffect(() => {
-    if (error || timeoutError) {
-      console.log("Attempting to reinitialize Stripe due to previous errors");
-    }
-  }, [error, timeoutError]);
-  
   // Initialize on component mount
   useEffect(() => {
-    console.log("StripeProvider mounting, client secret:", clientSecret ? "Present" : "Not present");
+    console.log("[StripeProvider] Component mounted, initializing...");
+    initializeStripe();
     
-    let isMounted = true;
-    let timeoutId: number | undefined;
-    
-    // Safe initialization with error handling
-    try {
-      initializeStripe();
-    } catch (err) {
-      console.error("Failed to start Stripe initialization:", err);
-    }
-    
-    // Set a timeout to detect if Stripe is taking too long to initialize
-    // Increased to 15 seconds for production environments
-    timeoutId = window.setTimeout(() => {
-      if (!stripeInitialized && isMounted) {
-        console.warn("Stripe initialization timeout reached after 15 seconds");
-        setTimeoutError(true);
-        setLoading(false);
-      }
-    }, 15000); // 15 seconds timeout for production
-    
-    // Cleanup function
     return () => {
-      isMounted = false;
-      if (timeoutId) clearTimeout(timeoutId);
-      console.log("StripeProvider unmounting, cleaning up");
+      console.log("[StripeProvider] Component unmounting");
     };
-  }, []); // Only run once on mount
+  }, []);
 
-  // Log when client secret changes
+  // Handle client secret changes
   useEffect(() => {
-    console.log("Client secret changed:", clientSecret ? "Present" : "Not present");
-    
-    // Reset loading state when client secret changes to ensure elements are properly initialized
-    if (clientSecret && stripeInitialized) {
-      setLoading(true);
-      // Give Elements time to initialize with the new secret
-      setTimeout(() => setLoading(false), 2000);
+    if (clientSecret) {
+      console.log("[StripeProvider] Client secret received, Elements will be ready");
     }
-  }, [clientSecret, stripeInitialized]);
+  }, [clientSecret]);
   
   const handleRetry = () => {
+    console.log("[StripeProvider] Manual retry requested");
+    setAttemptCount(0);
     toast({
       title: "Retrying connection",
       description: "Attempting to reconnect to the payment system...",
     });
-    stripeInitializationAttempts = 0;
     initializeStripe(true);
   };
   
-  // If there's an error, show a user-friendly message but don't block rendering
-  if (error || timeoutError) {
-    const errorMessage = timeoutError 
-      ? "The payment system is taking too long to respond."
-      : error;
-      
+  // Show error state with retry option
+  if (error) {
     return (
       <ErrorBoundary>
         <div className="flex justify-center items-center p-8 flex-col space-y-4">
-          <AlertCircle className="h-8 w-8 text-amber-500" />
-          <p className="text-amber-500 font-medium">{errorMessage}</p>
-          <p className="text-sm text-muted-foreground">You can still browse the site</p>
+          <AlertCircle className="h-8 w-8 text-red-500" />
+          <p className="text-red-600 font-medium text-center">{error}</p>
+          <p className="text-sm text-muted-foreground text-center">
+            You can still browse the site, but payments are unavailable.
+          </p>
           <Button 
             onClick={handleRetry}
             className="px-4 py-2 flex items-center gap-2"
           >
             <RefreshCw className="h-4 w-4" />
-            Retry Connection
+            Try Again
           </Button>
         </div>
       </ErrorBoundary>
     );
   }
 
+  // Show loading state
   if (loading || !stripeInitialized) {
     return (
       <ErrorBoundary>
         <div className="flex justify-center items-center p-8 flex-col space-y-4">
           <Loader className="h-8 w-8 animate-spin text-primary" />
           <p className="text-muted-foreground text-sm">
-            Initializing payment system...
+            Connecting to payment system...
           </p>
           <p className="text-xs text-muted-foreground">
-            This may take a few seconds. Please wait.
+            Attempt {attemptCount + 1} of {MAX_INITIALIZATION_ATTEMPTS}
           </p>
         </div>
       </ErrorBoundary>
     );
   }
 
+  // Show waiting for client secret
   if (!clientSecret) {
-    console.warn("Client secret is missing, cannot initialize Stripe Elements");
+    console.log("[StripeProvider] Waiting for client secret...");
     return (
       <ErrorBoundary>
         <div className="flex justify-center items-center p-8 flex-col space-y-4">
-          <AlertCircle className="h-8 w-8 text-amber-500" />
-          <p className="text-amber-500">
-            Payment information is not ready.
+          <Loader className="h-6 w-6 animate-spin text-primary" />
+          <p className="text-muted-foreground text-sm">
+            Preparing payment information...
           </p>
-          <Button 
-            onClick={handleRetry}
-            className="px-4 py-2 flex items-center gap-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Retry
-          </Button>
         </div>
       </ErrorBoundary>
     );
   }
 
-  console.log("Rendering Stripe Elements with client secret");
+  console.log("[StripeProvider] Rendering Stripe Elements");
 
-  // Wrap the Elements provider in our error boundary
   return (
     <ErrorBoundary fallback={<StripeFallback onRetry={handleRetry} />}>
       <Elements

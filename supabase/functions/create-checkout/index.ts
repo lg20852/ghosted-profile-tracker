@@ -4,7 +4,6 @@ import { corsHeaders } from "../_shared/cors.ts";
 import Stripe from "https://esm.sh/stripe@13.11.0";
 
 const handler = async (req: Request) => {
-  // Helper function for consistent logging
   const logStep = (step: string, details?: any) => {
     const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
     console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
@@ -20,7 +19,6 @@ const handler = async (req: Request) => {
     });
   }
 
-  // Validate that this is a POST request
   if (req.method !== "POST") {
     logStep("ERROR: Invalid method", { method: req.method });
     return new Response(
@@ -35,7 +33,6 @@ const handler = async (req: Request) => {
   }
 
   try {
-    // IMPORTANT: This should be the secret key, not the publishable key
     const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
     
     if (!STRIPE_SECRET_KEY) {
@@ -43,7 +40,6 @@ const handler = async (req: Request) => {
       throw new Error("Payment service is not properly configured. Please contact support.");
     }
 
-    // Check if the key provided matches the pattern of a secret key (starts with sk_)
     if (!STRIPE_SECRET_KEY.startsWith("sk_")) {
       logStep("ERROR: Invalid STRIPE_SECRET_KEY format - expecting secret key (sk_)");
       throw new Error("The Stripe key appears to be invalid. Secret keys should start with 'sk_'. Please check your configuration.");
@@ -55,14 +51,35 @@ const handler = async (req: Request) => {
     try {
       stripe = new Stripe(STRIPE_SECRET_KEY, {
         apiVersion: "2023-10-16",
+        timeout: 30000, // 30 second timeout
+        maxNetworkRetries: 3, // Enable automatic retries
       });
+      
+      // Test the connection by making a simple API call
+      logStep("Testing Stripe connection...");
+      await stripe.balance.retrieve();
+      logStep("Stripe connection test successful");
+      
     } catch (stripeInitError) {
-      logStep("Failed to initialize Stripe", stripeInitError);
-      throw new Error(`Payment service initialization failed: ${stripeInitError.message}`);
+      logStep("Failed to initialize or test Stripe connection", stripeInitError);
+      
+      if (stripeInitError.type === "StripeAuthenticationError") {
+        throw new Error("Invalid Stripe secret key. Please verify your Stripe configuration.");
+      } else if (stripeInitError.type === "StripeConnectionError") {
+        throw new Error("Could not connect to Stripe servers. Please try again later.");
+      } else {
+        throw new Error(`Payment service initialization failed: ${stripeInitError.message}`);
+      }
     }
 
-    // Parse request body
-    const requestData = await req.json();
+    // Parse request body with timeout
+    const requestPromise = req.json();
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Request timeout")), 10000);
+    });
+    
+    const requestData = await Promise.race([requestPromise, timeoutPromise]);
+    
     logStep("Request data received", { 
       amount: requestData.amount,
       ghostName: requestData.ghostName,
@@ -74,63 +91,119 @@ const handler = async (req: Request) => {
     
     if (!amount || amount <= 0) {
       logStep("Invalid amount provided", { amount });
-      throw new Error("Invalid amount");
+      throw new Error("Invalid amount provided");
+    }
+
+    if (!ghostName && !companyName) {
+      logStep("Missing ghost/company name");
+      throw new Error("Missing required company or ghost name");
     }
 
     const displayName = companyName || ghostName;
     
     logStep(`Creating payment intent for ${displayName} with amount ${amount}`);
     
-    // Create Payment Intent with proper error handling
+    // Generate idempotency key for duplicate prevention
+    const idempotencyKey = `payment_${displayName}_${amount}_${spookCount}_${Date.now()}`.replace(/[^a-zA-Z0-9_]/g, '_');
+    
     let paymentIntent;
     try {
       paymentIntent = await stripe.paymentIntents.create({
         amount: amount * 100, // Convert dollar amount to cents
         currency: "usd",
         metadata: {
-          ghostName,
-          companyName,
-          spookCount: String(spookCount),
+          ghostName: ghostName || "",
+          companyName: companyName || "",
+          spookCount: String(spookCount || 1),
+          created_at: new Date().toISOString(),
         },
         automatic_payment_methods: {
           enabled: true,
         },
-        description: `Settlement payment for ${spookCount} ghosting incident${spookCount !== 1 ? 's' : ''} - ${displayName}`
+        description: `Settlement payment for ${spookCount || 1} ghosting incident${(spookCount || 1) !== 1 ? 's' : ''} - ${displayName}`,
+        statement_descriptor: "GHOSTED SETTLEMENT",
+      }, {
+        idempotencyKey, // Prevent duplicate payments
       });
       
       logStep("Payment intent created successfully", { 
         id: paymentIntent.id, 
-        clientSecret: paymentIntent.client_secret?.slice(0, 10) + '...' 
+        clientSecret: paymentIntent.client_secret?.slice(0, 10) + '...', 
+        amount: paymentIntent.amount,
+        currency: paymentIntent.currency
       });
+      
     } catch (paymentIntentError) {
       logStep("Failed to create payment intent", paymentIntentError);
       
-      // Return specific errors based on Stripe error types
       if (paymentIntentError.type === "StripeAuthenticationError" || 
           paymentIntentError.message?.includes("Invalid API Key")) {
-        throw new Error("Payment service authentication failed. Please contact support.");
+        throw new Error("Payment service authentication failed. Please verify your Stripe configuration.");
       } else if (paymentIntentError.type === "StripeConnectionError") {
-        throw new Error("Could not connect to payment service. Please try again later.");
+        throw new Error("Could not connect to payment service. Please check your internet connection and try again.");
+      } else if (paymentIntentError.type === "StripeCardError") {
+        throw new Error(`Card error: ${paymentIntentError.message}`);
+      } else if (paymentIntentError.code === "amount_too_small") {
+        throw new Error("Payment amount is too small. Minimum amount is $0.50 USD.");
+      } else if (paymentIntentError.code === "amount_too_large") {
+        throw new Error("Payment amount is too large. Please contact support for large payments.");
       } else {
-        throw new Error(`Payment initialization failed: ${paymentIntentError.message}`);
+        throw new Error(`Payment initialization failed: ${paymentIntentError.message || 'Unknown error'}`);
       }
     }
     
+    // Validate the response before sending
+    if (!paymentIntent.client_secret) {
+      logStep("ERROR: No client secret in payment intent response");
+      throw new Error("Payment service returned invalid response. Please try again.");
+    }
+    
     return new Response(JSON.stringify({ 
-      clientSecret: paymentIntent.client_secret 
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
+      amount: paymentIntent.amount,
+      currency: paymentIntent.currency,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
+    
   } catch (error) {
-    logStep("Error creating payment intent", { message: error.message, stack: error.stack });
+    logStep("Error creating payment intent", { 
+      message: error.message, 
+      type: error.type,
+      code: error.code,
+      stack: error.stack?.substring(0, 500) // Truncate stack trace
+    });
+    
+    // Return user-friendly error messages
+    let errorMessage = "Failed to create payment intent";
+    let statusCode = 500;
+    
+    if (error.message.includes("timeout") || error.message.includes("Request timeout")) {
+      errorMessage = "Request timed out. Please try again.";
+      statusCode = 408;
+    } else if (error.message.includes("network") || error.message.includes("connection")) {
+      errorMessage = "Network error. Please check your connection and try again.";
+      statusCode = 503;
+    } else if (error.message.includes("authentication") || error.message.includes("Invalid API Key")) {
+      errorMessage = "Payment service configuration error. Please contact support.";
+      statusCode = 500;
+    } else if (error.message.includes("Invalid amount") || error.message.includes("Missing required")) {
+      errorMessage = error.message;
+      statusCode = 400;
+    } else {
+      errorMessage = error.message || "An unexpected error occurred";
+    }
+    
     return new Response(
       JSON.stringify({
-        error: error.message || "Failed to create payment intent",
+        error: errorMessage,
+        timestamp: new Date().toISOString(),
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
+        status: statusCode,
       }
     );
   }
