@@ -40,10 +40,17 @@ const handler = async (req: Request) => {
       throw new Error("Payment service is not properly configured. Please contact support.");
     }
 
-    if (!STRIPE_SECRET_KEY.startsWith("sk_")) {
-      logStep("ERROR: Invalid STRIPE_SECRET_KEY format - expecting secret key (sk_)");
-      throw new Error("The Stripe key appears to be invalid. Secret keys should start with 'sk_'. Please check your configuration.");
+    // Check if we're using test or live mode
+    const isTestMode = STRIPE_SECRET_KEY.startsWith("sk_test_");
+    const isLiveMode = STRIPE_SECRET_KEY.startsWith("sk_live_");
+    
+    if (!isTestMode && !isLiveMode) {
+      logStep("ERROR: Invalid STRIPE_SECRET_KEY format - expecting secret key (sk_test_ or sk_live_)");
+      throw new Error("The Stripe key appears to be invalid. Secret keys should start with 'sk_test_' or 'sk_live_'. Please check your configuration.");
     }
+
+    const mode = isTestMode ? "TEST" : "LIVE";
+    logStep(`Using Stripe in ${mode} mode`);
 
     logStep("Initializing Stripe with secret key");
     let stripe;
@@ -64,7 +71,7 @@ const handler = async (req: Request) => {
       logStep("Failed to initialize or test Stripe connection", stripeInitError);
       
       if (stripeInitError.type === "StripeAuthenticationError") {
-        throw new Error("Invalid Stripe secret key. Please verify your Stripe configuration.");
+        throw new Error(`Invalid Stripe secret key. Please verify your Stripe ${mode} configuration.`);
       } else if (stripeInitError.type === "StripeConnectionError") {
         throw new Error("Could not connect to Stripe servers. Please try again later.");
       } else {
@@ -101,7 +108,7 @@ const handler = async (req: Request) => {
 
     const displayName = companyName || ghostName;
     
-    logStep(`Creating payment intent for ${displayName} with amount ${amount}`);
+    logStep(`Creating payment intent for ${displayName} with amount ${amount} in ${mode} mode`);
     
     // Generate idempotency key for duplicate prevention
     const idempotencyKey = `payment_${displayName}_${amount}_${spookCount}_${Date.now()}`.replace(/[^a-zA-Z0-9_]/g, '_');
@@ -116,6 +123,7 @@ const handler = async (req: Request) => {
           companyName: companyName || "",
           spookCount: String(spookCount || 1),
           created_at: new Date().toISOString(),
+          test_mode: isTestMode ? "true" : "false",
         },
         automatic_payment_methods: {
           enabled: true,
@@ -130,7 +138,8 @@ const handler = async (req: Request) => {
         id: paymentIntent.id, 
         clientSecret: paymentIntent.client_secret?.slice(0, 10) + '...', 
         amount: paymentIntent.amount,
-        currency: paymentIntent.currency
+        currency: paymentIntent.currency,
+        mode: mode
       });
       
     } catch (paymentIntentError) {
@@ -138,7 +147,7 @@ const handler = async (req: Request) => {
       
       if (paymentIntentError.type === "StripeAuthenticationError" || 
           paymentIntentError.message?.includes("Invalid API Key")) {
-        throw new Error("Payment service authentication failed. Please verify your Stripe configuration.");
+        throw new Error(`Payment service authentication failed. Please verify your Stripe ${mode} configuration.`);
       } else if (paymentIntentError.type === "StripeConnectionError") {
         throw new Error("Could not connect to payment service. Please check your internet connection and try again.");
       } else if (paymentIntentError.type === "StripeCardError") {
@@ -163,6 +172,7 @@ const handler = async (req: Request) => {
       paymentIntentId: paymentIntent.id,
       amount: paymentIntent.amount,
       currency: paymentIntent.currency,
+      testMode: isTestMode,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
@@ -187,7 +197,7 @@ const handler = async (req: Request) => {
       errorMessage = "Network error. Please check your connection and try again.";
       statusCode = 503;
     } else if (error.message.includes("authentication") || error.message.includes("Invalid API Key")) {
-      errorMessage = "Payment service configuration error. Please contact support.";
+      errorMessage = "Payment service configuration error. Make sure you're using matching Stripe test keys.";
       statusCode = 500;
     } else if (error.message.includes("Invalid amount") || error.message.includes("Missing required")) {
       errorMessage = error.message;

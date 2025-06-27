@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
@@ -8,8 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import ErrorBoundary from "./ErrorBoundary";
 
-// Update the LIVE publishable key to match your Stripe account
-const STRIPE_PUBLISHABLE_KEY = "pk_live_51RN3k4Al4XSYcvLdnHh8glThz1Dr2A25On1lFDlJ8iYSg9B2ITGhGu4XcFEiDSoPJS8q72N82Sh1c5wJknXxtiRE00YfUlkcnI";
+// Updated to use TEST publishable key instead of live
+const STRIPE_PUBLISHABLE_KEY = "pk_test_51RN3k4Al4XSYcvLdUdnBKJg8fN1YSgKcfP2vFzX3LgJ8iYSg9B2ITGhGu4XcFEiDSoPJS8q72N82Sh1c5wJknXxtiRE00YfUlkcnI";
 
 // Enhanced configuration for better reliability
 const MAX_INITIALIZATION_ATTEMPTS = 3;
@@ -51,10 +50,14 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children 
     setError(null);
     
     try {
-      // Validate publishable key format
-      if (!STRIPE_PUBLISHABLE_KEY.startsWith("pk_")) {
+      // Validate publishable key format - now checking for test key
+      if (!STRIPE_PUBLISHABLE_KEY.startsWith("pk_test_") && !STRIPE_PUBLISHABLE_KEY.startsWith("pk_live_")) {
         throw new Error("Invalid Stripe publishable key format");
       }
+      
+      // Log which mode we're using
+      const mode = STRIPE_PUBLISHABLE_KEY.startsWith("pk_test_") ? "TEST" : "LIVE";
+      console.log(`[StripeProvider] Using Stripe in ${mode} mode`);
       
       console.log("[StripeProvider] Creating Stripe instance...");
       const newStripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
@@ -100,7 +103,7 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children 
       if (errorMessage.includes("timeout")) {
         userFriendlyError = "Payment system is taking too long to respond. Please check your internet connection.";
       } else if (errorMessage.includes("API key") || errorMessage.includes("Invalid")) {
-        userFriendlyError = "Payment system configuration error. Please contact support.";
+        userFriendlyError = "Payment system configuration error. Make sure you're using matching test keys in both frontend and backend.";
       } else if (errorMessage.includes("network") || errorMessage.includes("connection")) {
         userFriendlyError = "Network connection issue. Please check your internet and try again.";
       }
@@ -152,7 +155,7 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ clientSecret, children 
           <AlertCircle className="h-8 w-8 text-red-500" />
           <p className="text-red-600 font-medium text-center">{error}</p>
           <p className="text-sm text-muted-foreground text-center">
-            You can still browse the site, but payments are unavailable.
+            Make sure you're using matching Stripe test keys in both your frontend and Supabase edge function.
           </p>
           <Button 
             onClick={handleRetry}
