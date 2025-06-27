@@ -17,9 +17,6 @@ interface StripePaymentFormProps {
 
 type CheckoutStep = "details" | "payment" | "success";
 
-const PAYMENT_ELEMENT_TIMEOUT = 30000; // 30 seconds
-const MAX_ELEMENT_LOAD_ATTEMPTS = 3;
-
 const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
   onSuccess,
   onCancel,
@@ -35,7 +32,6 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
   const [elementLoading, setElementLoading] = useState(true);
   const [elementError, setElementError] = useState<string | null>(null);
   const [activeStep, setActiveStep] = useState<CheckoutStep>("details");
-  const [elementAttempts, setElementAttempts] = useState(0);
   const { toast } = useToast();
 
   const progressPercentage = 
@@ -51,47 +47,23 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
       elements: !!elements, 
       elementReady, 
       elementLoading,
-      elementError,
-      attempts: elementAttempts
+      elementError
     });
-  }, [stripe, elements, elementReady, elementLoading, elementError, elementAttempts]);
+  }, [stripe, elements, elementReady, elementLoading, elementError]);
 
-  // Enhanced element loading with timeout and retry
+  // Simple element state management
   useEffect(() => {
     if (activeStep === "payment") {
       console.log("[PaymentForm] Payment step activated, waiting for element...");
       setElementLoading(true);
       setElementError(null);
-      
-      const timeoutId = setTimeout(() => {
-        if (!elementReady && elementLoading) {
-          console.warn("[PaymentForm] Payment element timeout reached");
-          setElementAttempts(prev => prev + 1);
-          
-          if (elementAttempts < MAX_ELEMENT_LOAD_ATTEMPTS - 1) {
-            console.log(`[PaymentForm] Retrying element load (attempt ${elementAttempts + 2}/${MAX_ELEMENT_LOAD_ATTEMPTS})`);
-            // Force re-render of PaymentElement
-            setElementError("Loading payment form... Please wait.");
-            setTimeout(() => {
-              setElementError(null);
-              setElementLoading(true);
-            }, 2000);
-          } else {
-            setElementError("Payment form failed to load after multiple attempts. Please refresh the page or try again later.");
-            setElementLoading(false);
-          }
-        }
-      }, PAYMENT_ELEMENT_TIMEOUT);
-      
-      return () => clearTimeout(timeoutId);
     } else {
       // Reset when leaving payment step
       setElementReady(false);
       setElementLoading(true);
       setElementError(null);
-      setElementAttempts(0);
     }
-  }, [activeStep, elementAttempts]);
+  }, [activeStep]);
 
   const formattedAmount = new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -198,22 +170,6 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
     setPaymentStatus("idle");
     setElementError(null);
     setIsProcessing(false);
-    setElementReady(false);
-    setElementLoading(true);
-    setElementAttempts(0);
-    
-    // Clear payment element if it exists
-    if (elements) {
-      const paymentElement = elements.getElement("payment");
-      if (paymentElement) {
-        try {
-          paymentElement.clear();
-          console.log("[PaymentForm] Payment element cleared for retry");
-        } catch (e) {
-          console.error("[PaymentForm] Failed to clear payment element:", e);
-        }
-      }
-    }
   };
 
   const handlePaymentElementReady = () => {
@@ -221,7 +177,6 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
     setElementReady(true);
     setElementLoading(false);
     setElementError(null);
-    setElementAttempts(0);
   };
 
   const handlePaymentElementError = (event: { error: { message: string; } }) => {
@@ -234,13 +189,10 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
       errorMessage = "Payment configuration error. The Stripe keys may be mismatched or invalid. Please contact support.";
     } else if (errorMessage.includes("network") || errorMessage.includes("connection")) {
       errorMessage = "Network connection issue. Please check your internet connection and try again.";
-    } else if (errorMessage.includes("timeout")) {
-      errorMessage = "Payment system is taking too long to respond. Please try again.";
     }
     
     setElementError(errorMessage);
     setElementLoading(false);
-    setElementAttempts(prev => prev + 1);
   };
 
   return (
@@ -318,7 +270,6 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
                       <Loader className="h-6 w-6 animate-spin text-primary" />
                       <span className="text-sm text-muted-foreground">
                         Loading payment form...
-                        {elementAttempts > 0 && ` (Attempt ${elementAttempts + 1}/${MAX_ELEMENT_LOAD_ATTEMPTS})`}
                       </span>
                     </div>
                   )}
@@ -327,16 +278,14 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
                     <div className="flex flex-col justify-center items-center py-8 text-center space-y-3">
                       <AlertTriangle className="h-8 w-8 text-red-500" />
                       <p className="text-red-600 text-sm max-w-md">{elementError}</p>
-                      {elementAttempts < MAX_ELEMENT_LOAD_ATTEMPTS && (
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={handleRetry}
-                        >
-                          Try Again
-                        </Button>
-                      )}
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={handleRetry}
+                      >
+                        Try Again
+                      </Button>
                     </div>
                   )}
                   
