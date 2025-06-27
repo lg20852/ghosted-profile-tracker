@@ -121,7 +121,7 @@ const handler = async (req: Request) => {
           enabled: true,
         },
         description: `Settlement payment for ${spookCount || 1} ghosting incident${(spookCount || 1) !== 1 ? 's' : ''} - ${displayName}`,
-        statement_descriptor: "GHOSTED SETTLEMENT",
+        statement_descriptor_suffix: "GHOSTED", // Fixed: Use statement_descriptor_suffix instead of statement_descriptor
       }, {
         idempotencyKey, // Prevent duplicate payments
       });
