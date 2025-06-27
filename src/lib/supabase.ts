@@ -16,7 +16,6 @@ export type ReportRow = {
   venmo_handle?: string;
   location?: string;
   created_at?: string; // Postgres date format
-  user_id?: string; // New field for user tracking
 };
 
 // Helper functions to convert between Report interface and ReportRow (database format)
@@ -48,8 +47,7 @@ export function reportToRow(report: Report): ReportRow {
     date_ghosted: report.dateGhosted.toISOString(),
     evidence_url: report.evidenceURL,
     venmo_handle: report.venmoHandle,
-    location: report.location,
-    user_id: report.userId // Include user_id in the conversion
+    location: report.location
   };
 }
 
@@ -65,8 +63,7 @@ export function rowToReport(row: any): Report {
     evidenceURL: row.evidence_url,
     venmoHandle: row.venmo_handle,
     location: row.location,
-    createdAt: row.created_at ? new Date(row.created_at) : undefined,
-    userId: row.user_id // Include user_id in the conversion
+    createdAt: row.created_at ? new Date(row.created_at) : undefined
   };
 }
 
@@ -93,21 +90,7 @@ export async function fetchReports(): Promise<Report[]> {
 
 export async function createReport(report: Report): Promise<Report | null> {
   try {
-    // Validate required fields before sending to database
-    if (!report.reporterName || !report.reporterEmail || !report.ghostName || 
-        !report.companyName || !report.evidenceURL) {
-      throw new Error('Missing required fields for report creation');
-    }
-
-    // Sanitize URLs to prevent XSS
-    const sanitizedReport = {
-      ...report,
-      evidenceURL: report.evidenceURL.trim(),
-      ghostPhotoURL: report.ghostPhotoURL.trim(),
-      reporterEmail: report.reporterEmail.toLowerCase().trim()
-    };
-
-    const reportRow = reportToRow(sanitizedReport);
+    const reportRow = reportToRow(report);
     
     const { data, error } = await supabase
       .from('reports')
