@@ -7,8 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import ErrorBoundary from "./ErrorBoundary";
 
-// Updated to use TEST publishable key instead of live
-const STRIPE_PUBLISHABLE_KEY = "pk_test_51RN3k4Al4XSYcvLdUdnBKJg8fN1YSgKcfP2vFzX3LgJ8iYSg9B2ITGhGu4XcFEiDSoPJS8q72N82Sh1c5wJknXxtiRE00YfUlkcnI";
+// Updated to use the new TEST publishable key
+const STRIPE_PUBLISHABLE_KEY = "pk_test_51RN3k4Al4XSYcvLdI1aAhy7YEsKSla2vYZWGsRuhzsgxvZ1CuTfuBoZMIwGyOwfo5DY3OfQeJZPaAluZO7APouUR00jT078ruv";
 
 // Enhanced configuration for better reliability
 const MAX_INITIALIZATION_ATTEMPTS = 3;
