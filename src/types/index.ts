@@ -1,4 +1,3 @@
-
 // src/types/index.ts
 // Adding new fields for company name and location
 
@@ -26,4 +25,5 @@ export interface Report {
   venmoHandle?: string;
   location?: string;
   createdAt?: Date;
+  userId?: string; // Add userId field for tracking report ownership
 }

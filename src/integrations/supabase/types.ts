@@ -21,6 +21,7 @@ export type Database = {
           location: string | null
           reporter_email: string
           reporter_name: string
+          user_id: string | null
           venmo_handle: string | null
         }
         Insert: {
@@ -34,6 +35,7 @@ export type Database = {
           location?: string | null
           reporter_email: string
           reporter_name: string
+          user_id?: string | null
           venmo_handle?: string | null
         }
         Update: {
@@ -47,6 +49,7 @@ export type Database = {
           location?: string | null
           reporter_email?: string
           reporter_name?: string
+          user_id?: string | null
           venmo_handle?: string | null
         }
         Relationships: []

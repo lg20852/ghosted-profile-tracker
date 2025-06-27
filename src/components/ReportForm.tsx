@@ -1,13 +1,12 @@
 
 import React, { useState } from "react";
-import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useGhost } from "@/contexts/ghost/GhostContext"; // Updated import path
+import { useGhost } from "@/contexts/ghost/GhostContext";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -16,29 +15,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { toast } from "@/components/ui/use-toast";
 import { ReporterSection } from "./report/ReporterSection";
 import { GhostSection } from "./report/GhostSection";
-
-const formSchema = z.object({
-  reporterName: z.string().min(2, "Name is required"),
-  reporterEmail: z.string().email("Valid email is required"),
-  ghostName: z.string().min(2, "Recruiter name is required"),
-  companyName: z.string().min(2, "Company name is required"),
-  ghostPhotoURL: z.string().url("Valid URL is required"),
-  dateGhosted: z.date({
-    required_error: "Date is required"
-  }),
-  evidenceURL: z.string().url("Valid URL is required"),
-  venmoHandle: z.string().optional(),
-  location: z.string().optional()
-});
-
-type FormValues = z.infer<typeof formSchema>;
+import { formSchema, FormValues } from "@/lib/validation";
 
 const ReportForm = () => {
   const { addReport } = useGhost();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  // Add state to control the open/close state of the date picker popover
   const [datePickerOpen, setDatePickerOpen] = useState(false);
-  // Add reference to DialogClose component
   const dialogCloseRef = React.useRef<HTMLButtonElement>(null);
   
   const form = useForm<FormValues>({
@@ -59,21 +41,26 @@ const ReportForm = () => {
     setIsSubmitting(true);
     
     try {
-      // Create a report object with all required fields explicitly defined
-      const reportData = {
-        reporterName: data.reporterName,
-        reporterEmail: data.reporterEmail,
-        ghostName: data.ghostName,
-        companyName: data.companyName,
-        ghostPhotoURL: data.ghostPhotoURL,
+      // Sanitize input data before submission
+      const sanitizedData = {
+        reporterName: data.reporterName.trim(),
+        reporterEmail: data.reporterEmail.toLowerCase().trim(),
+        ghostName: data.ghostName.trim(),
+        companyName: data.companyName.trim(),
+        ghostPhotoURL: data.ghostPhotoURL.trim(),
         dateGhosted: data.dateGhosted,
-        evidenceURL: data.evidenceURL,
-        venmoHandle: data.venmoHandle,
-        location: data.location
+        evidenceURL: data.evidenceURL.trim(),
+        venmoHandle: data.venmoHandle?.trim(),
+        location: data.location?.trim()
       };
       
-      await addReport(reportData);
+      await addReport(sanitizedData);
       form.reset();
+      
+      toast({
+        title: "Report submitted successfully",
+        description: "Thank you for helping the community by reporting this ghosting experience.",
+      });
       
       // Close dialog after successful submission
       if (dialogCloseRef.current) {
@@ -83,7 +70,7 @@ const ReportForm = () => {
       console.error("Error submitting report:", error);
       toast({
         title: "Error",
-        description: "Failed to submit report. Please try again.",
+        description: "Failed to submit report. Please check your information and try again.",
         variant: "destructive"
       });
     } finally {
@@ -96,50 +83,78 @@ const ReportForm = () => {
       <DialogHeader>
         <DialogTitle>Report a Ghosting</DialogTitle>
         <DialogDescription>
-          Report recruiters or companies that have ghosted you during the hiring process.
+          Report recruiters or companies that have ghosted you during the hiring process. All information is verified before publication.
         </DialogDescription>
       </DialogHeader>
       
-      {/* Hidden DialogClose component that we can programmatically trigger */}
       <DialogClose ref={dialogCloseRef} className="hidden" />
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" autoComplete="off">
           <div className="space-y-4">
-            <FormField control={form.control} name="ghostName" render={({
-            field
-          }) => <FormItem>
-                  <FormLabel>Recruiter Name</FormLabel>
+            <FormField
+              control={form.control}
+              name="ghostName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Recruiter Name *</FormLabel>
                   <FormControl>
-                    <Input placeholder="John Doe" {...field} autoComplete="off" />
+                    <Input 
+                      placeholder="John Doe" 
+                      {...field} 
+                      autoComplete="off"
+                      maxLength={100}
+                    />
                   </FormControl>
                   <FormMessage />
-                </FormItem>} />
+                </FormItem>
+              )}
+            />
 
-            <FormField control={form.control} name="companyName" render={({
-            field
-          }) => <FormItem>
-                  <FormLabel>Company Name</FormLabel>
+            <FormField
+              control={form.control}
+              name="companyName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Company Name *</FormLabel>
                   <FormControl>
-                    <Input placeholder="Acme Inc." {...field} autoComplete="off" />
+                    <Input 
+                      placeholder="Acme Inc." 
+                      {...field} 
+                      autoComplete="off"
+                      maxLength={200}
+                    />
                   </FormControl>
                   <FormMessage />
-                </FormItem>} />
+                </FormItem>
+              )}
+            />
 
-            <FormField control={form.control} name="ghostPhotoURL" render={({
-            field
-          }) => <FormItem>
-                  <FormLabel>Recruiter (Linkedin)</FormLabel>
+            <FormField
+              control={form.control}
+              name="ghostPhotoURL"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Recruiter LinkedIn Profile *</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://www.linkedin.com/in/username" {...field} autoComplete="off" />
+                    <Input 
+                      placeholder="https://www.linkedin.com/in/username" 
+                      {...field} 
+                      autoComplete="off"
+                      type="url"
+                    />
                   </FormControl>
                   <FormMessage />
-                </FormItem>} />
+                </FormItem>
+              )}
+            />
 
-            <FormField control={form.control} name="dateGhosted" render={({
-            field
-          }) => <FormItem className="flex flex-col">
-                  <FormLabel>Date Ghosted</FormLabel>
+            <FormField
+              control={form.control}
+              name="dateGhosted"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Date Ghosted *</FormLabel>
                   <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -165,7 +180,6 @@ const ReportForm = () => {
                         selected={field.value}
                         onSelect={(date) => {
                           field.onChange(date);
-                          // Close the popover when a date is selected
                           setDatePickerOpen(false);
                         }}
                         disabled={(date) => date > new Date()}
@@ -176,39 +190,68 @@ const ReportForm = () => {
                     </PopoverContent>
                   </Popover>
                   <FormMessage />
-                </FormItem>} />
+                </FormItem>
+              )}
+            />
 
-            <FormField control={form.control} name="location" render={({
-            field
-          }) => <FormItem>
+            <FormField
+              control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
                   <FormLabel>Location (City)</FormLabel>
                   <FormControl>
-                    <Input placeholder="New York" {...field} autoComplete="off" />
+                    <Input 
+                      placeholder="New York" 
+                      {...field} 
+                      autoComplete="off"
+                      maxLength={100}
+                    />
                   </FormControl>
                   <FormMessage />
-                </FormItem>} />
+                </FormItem>
+              )}
+            />
 
-            <FormField control={form.control} name="evidenceURL" render={({
-            field
-          }) => <FormItem>
-                  <FormLabel>Evidence (Google Drive)</FormLabel>
+            <FormField
+              control={form.control}
+              name="evidenceURL"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Evidence (Google Drive Link) *</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://drive.google.com/file/d/..." {...field} autoComplete="off" />
+                    <Input 
+                      placeholder="https://drive.google.com/file/d/..." 
+                      {...field} 
+                      autoComplete="off"
+                      type="url"
+                    />
                   </FormControl>
                   <FormMessage />
-                </FormItem>} />
+                </FormItem>
+              )}
+            />
 
             <ReporterSection />
 
-            <FormField control={form.control} name="venmoHandle" render={({
-            field
-          }) => <FormItem>
+            <FormField
+              control={form.control}
+              name="venmoHandle"
+              render={({ field }) => (
+                <FormItem>
                   <FormLabel>Your Venmo Handle (for compensation)</FormLabel>
                   <FormControl>
-                    <Input placeholder="@username" {...field} autoComplete="off" />
+                    <Input 
+                      placeholder="@username" 
+                      {...field} 
+                      autoComplete="off"
+                      maxLength={31}
+                    />
                   </FormControl>
                   <FormMessage />
-                </FormItem>} />
+                </FormItem>
+              )}
+            />
           </div>
           
           <DialogFooter className="pt-4">
