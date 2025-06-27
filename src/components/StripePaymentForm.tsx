@@ -196,7 +196,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-h-[80vh] overflow-y-auto">
       <div>
         <Progress value={progressPercentage} className="h-2 mb-4" />
         <div className="flex justify-between text-xs text-muted-foreground mb-6">
@@ -254,8 +254,8 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
       )}
       
       {activeStep === "payment" && (
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <Card>
+        <div className="flex flex-col min-h-0">
+          <Card className="flex-1">
             <CardContent className="p-6">
               <div className="mb-6">
                 <h3 className="text-xl font-semibold mb-4">Payment Details</h3>
@@ -264,7 +264,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
                   <span>Enter your card details below to complete the payment</span>
                 </div>
                 
-                <div className="bg-muted/30 p-5 rounded-md border min-h-[200px] flex items-center justify-center">
+                <div className="bg-muted/30 p-5 rounded-md border min-h-[300px] flex items-center justify-center">
                   {elementLoading && !elementError && (
                     <div className="flex flex-col justify-center items-center py-8 text-center space-y-2">
                       <Loader className="h-6 w-6 animate-spin text-primary" />
@@ -319,8 +319,13 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
                   <span>Your payment information is encrypted and secure</span>
                 </div>
               </div>
-              
-              <div className="flex justify-between pt-2">
+            </CardContent>
+          </Card>
+          
+          {/* Fixed bottom section for buttons */}
+          <div className="mt-4 bg-white border-t pt-4 pb-2">
+            <form onSubmit={handleSubmit}>
+              <div className="flex justify-between items-center mb-4">
                 <Button
                   type="button"
                   variant="outline"
@@ -362,13 +367,13 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
                   </Button>
                 )}
               </div>
-            </CardContent>
-          </Card>
-          
-          <div className="text-xs text-center text-muted-foreground">
-            By clicking "Pay", you agree to the settlement terms and conditions
+              
+              <div className="text-xs text-center text-muted-foreground">
+                By clicking "Pay", you agree to the settlement terms and conditions
+              </div>
+            </form>
           </div>
-        </form>
+        </div>
       )}
       
       {activeStep === "success" && (
